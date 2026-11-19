@@ -15,6 +15,8 @@ To choose your own: `ADMIN_USER=admin ADMIN_PASSWORD=YourPassword node server.js
 1. Sign in as the publisher, upload the monthly database, pick the billing month.
 2. Click **Publish to viewers** (about a minute). Done.
 3. **Users** (top right) adds viewers. Give each bank or colleague their own login. They only see results.
+   Type bank codes in the **Banks** box (for example `PNB` or `BDO,SBC`) to limit a viewer to those banks; blank means all banks.
+   Use the **Banks** button on an existing person to change it. The server removes other banks' numbers, bills and downloads before sending anything.
 
 Other computers on your network open `http://<this-computer's-IP>:3000`.
 
@@ -112,3 +114,13 @@ Add a user from the command line: `node server.js adduser jane Password123 viewe
 - Passwords are stored hashed (scrypt). Sessions last 12 hours. 5 wrong logins locks that user for 5 minutes.
 - Only the publisher can change results; viewers can only read and download.
 - To update the app itself, replace `public/app.html` with the new index.html. Restart not needed.
+
+## Live window (one running OneDrive file)
+
+Publishers see a **Live | Billing** toggle at the top of the page and land on Live. Live shows the dashboard for one file that you keep editing in OneDrive, with a "Connected to …" line instead of an upload bar. The server checks the file every 5 minutes and reloads the numbers only when the file has changed.
+
+* The file defaults to `CCDM/CCDM_DB_Live.xlsm` in your OneDrive (the same Microsoft sign-in you already use: `MS_CLIENT_ID`, then **Connect OneDrive** once on the main page).
+* To use a different file set `ONEDRIVE_LIVE_FILE` (path inside your OneDrive, for example `CCDM/Other.xlsm`).
+* Other ways to point at the file: `LIVE_LOCAL_FILE` (a full path on the computer running the server, such as a synced OneDrive folder) or `ONEDRIVE_LIVE_LINK` (a share link).
+* The file should have the same sheets as the monthly database (Deployed, Pullout, Services).
+* The Live is open to every signed-in user and shows all banks. Bank limits apply to Billing only.

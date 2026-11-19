@@ -11,16 +11,17 @@ button{cursor:pointer}button.p{background:var(--acc);border-color:var(--acc);col
 .row{display:flex;gap:8px;flex-wrap:wrap}#m{min-height:1.4em;color:var(--mut)}
 </style></head><body><main>
 <div><h1>Users</h1><a href="/">← Back to billing</a></div>
-<div class="card"><h2>Add a person</h2><div class="row"><input id="n" placeholder="Username"><input id="p" type="password" placeholder="Password (8+ characters)"><select id="r"><option value="viewer">Viewer (sees results only)</option><option value="admin">Publisher (uploads and publishes)</option></select><button class="p" id="a">Add</button></div><p id="m"></p></div>
+<div class="card"><h2>Add a person</h2><div class="row"><input id="n" placeholder="Username"><input id="p" type="password" placeholder="Password (8+ characters)"><select id="r"><option value="viewer">Viewer (sees results only)</option><option value="admin">Publisher (uploads and publishes)</option></select><input id="b" placeholder="Banks, e.g. BDO,PNB (blank = all)" size="26"><button class="p" id="a">Add</button></div><p id="m"></p></div>
 <div class="card"><h2>People</h2><table id="t"></table></div>
 </main><script>
 var $=function(i){return document.getElementById(i)};
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 async function api(m,u,b){var r=await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined}),j=await r.json();if(!r.ok)throw new Error(j.error||'failed');return j}
-async function load(){var us=await api('GET','/api/users');$('t').innerHTML='<tr><th>Username</th><th>Role</th><th>Created</th><th></th></tr>'+us.map(function(u){return'<tr><td>'+esc(u.username)+'</td><td>'+(u.role==='admin'?'Publisher':'Viewer')+'</td><td>'+new Date(u.created).toLocaleDateString()+'</td><td><button data-pw="'+u.id+'">New password</button> <button data-del="'+u.id+'">Delete</button></td></tr>'}).join('')}
-$('a').onclick=async function(){try{await api('POST','/api/users',{username:$('n').value,password:$('p').value,role:$('r').value});$('n').value=$('p').value='';$('m').textContent='Added.';load()}catch(e){$('m').textContent=e.message}};
-$('t').onclick=async function(e){var pw=e.target.dataset.pw,d=e.target.dataset.del;
- try{if(pw){var v=prompt('New password (8+ characters)');if(!v)return;await api('PUT','/api/users/'+pw,{password:v});$('m').textContent='Password changed.'}
+async function load(){var us=await api('GET','/api/users');$('t').innerHTML='<tr><th>Username</th><th>Role</th><th>Banks</th><th>Created</th><th></th></tr>'+us.map(function(u){return'<tr><td>'+esc(u.username)+'</td><td>'+(u.role==='admin'?'Publisher':'Viewer')+'</td><td>'+(u.role==='admin'?'All':esc(u.banks||'All'))+'</td><td>'+new Date(u.created).toLocaleDateString()+'</td><td>'+(u.role==='admin'?'':'<button data-bk="'+u.id+'" data-cur="'+esc(u.banks||'')+'">Banks</button> ')+'<button data-pw="'+u.id+'">New password</button> <button data-del="'+u.id+'">Delete</button></td></tr>'}).join('')}
+$('a').onclick=async function(){try{await api('POST','/api/users',{username:$('n').value,password:$('p').value,role:$('r').value,banks:$('b').value});$('n').value=$('p').value=$('b').value='';$('m').textContent='Added.';load()}catch(e){$('m').textContent=e.message}};
+$('t').onclick=async function(e){var pw=e.target.dataset.pw,d=e.target.dataset.del,bk=e.target.dataset.bk;
+ try{if(bk){var nb=prompt('Banks this person may see, separated by commas (blank = all banks)',e.target.dataset.cur);if(nb===null)return;await api('PUT','/api/users/'+bk,{banks:nb});$('m').textContent='Banks updated.';load()}
+ if(pw){var v=prompt('New password (8+ characters)');if(!v)return;await api('PUT','/api/users/'+pw,{password:v});$('m').textContent='Password changed.'}
  if(d&&confirm('Delete this person?')){await api('DELETE','/api/users/'+d);load()}}catch(x){$('m').textContent=x.message}};
 load();
 </script></body></html>
