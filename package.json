@@ -1,0 +1,1 @@
+{"name":"esi-ccdm-billing-server","version":"1.0.0","private":true,"description":"ESI CCDM Billing with shared results and login","scripts":{"start":"node server.js"},"engines":{"node":">=22.5"}}

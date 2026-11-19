@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: esi-ccdm-billing
+    runtime: docker
+    region: singapore
+    plan: starter          # a paid plan is needed for the disk that keeps users and results
+    disk:
+      name: billing-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false        # you type this in the Render dashboard; it is not stored in the repo

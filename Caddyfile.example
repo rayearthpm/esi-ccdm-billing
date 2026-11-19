@@ -1,0 +1,4 @@
+# Free automatic HTTPS. Replace the name with your domain, point its DNS at this server, then: caddy run
+billing.yourcompany.com {
+	reverse_proxy localhost:3000
+}

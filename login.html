@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in · ESI CCDM Billing</title>
+<style>
+:root{--bg:#f2f4f8;--card:#fff;--ink:#16203a;--mut:#5b6478;--line:#d9deea;--acc:#1d5fd6;--bad:#b3261e}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1424;--card:#171f35;--ink:#e8ecf6;--mut:#9aa5bf;--line:#2a3452;--acc:#6b9cff;--bad:#ff8a80}}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif;padding:16px}
+form{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px;width:100%;max-width:360px;display:grid;gap:14px}
+h1{margin:0;font-size:20px}p{margin:0;color:var(--mut)}label{display:grid;gap:4px;font-weight:600;font-size:13px}
+input{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink)}
+button{font:inherit;font-weight:600;padding:10px;border:0;border-radius:8px;background:var(--acc);color:#fff;cursor:pointer}button:disabled{opacity:.6}
+#e{color:var(--bad);min-height:1.4em}
+</style></head><body>
+<form id="f"><h1>ESI CCDM Billing</h1><p>Sign in to see the shared results.</p>
+<label>Username<input name="u" autocomplete="username" required autofocus></label>
+<label>Password<input name="p" type="password" autocomplete="current-password" required></label>
+<div id="e" role="alert"></div><button>Sign in</button></form>
+<script>
+document.getElementById('f').onsubmit=async function(ev){ev.preventDefault();var b=this.querySelector('button'),e=document.getElementById('e');b.disabled=true;e.textContent='';
+ try{var r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:this.u.value,password:this.p.value})}),j=await r.json();
+ if(r.ok)location.href='/';else e.textContent=j.error||'Could not sign in.'}catch(x){e.textContent='Could not reach the server.'}b.disabled=false};
+</script></body></html>
