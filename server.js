@@ -207,7 +207,7 @@ const SESSION_MS=1000*60*60*12;
 const cookie=(req)=>Object.fromEntries((req.headers.cookie||'').split(';').map(s=>s.trim().split('=')).filter(a=>a[0]).map(a=>[a[0],a.slice(1).join('=')]));
 function authed(req){q.purge.run(Date.now());const t=cookie(req).sid;return t?q.sess.get(t,Date.now())||null:null}
 const secure=(req)=>req.headers['x-forwarded-proto']==='https'||req.socket.encrypted;
-const send=(res,code,body,type,extra)=>{res.writeHead(code,Object.assign({'Content-Type':type||'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY','Referrer-Policy':'same-origin'},extra||{}));res.end(typeof body==='string'||Buffer.isBuffer(body)?body:JSON.stringify(body))};
+const send=(res,code,body,type,extra)=>{res.writeHead(code,Object.assign({'Content-Type':type||'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Frame-Options':'SAMEORIGIN','Referrer-Policy':'same-origin'},extra||{}));res.end(typeof body==='string'||Buffer.isBuffer(body)?body:JSON.stringify(body))};
 const json=(res,code,o)=>send(res,code,o);
 function body(req,limit=1500000){return new Promise((ok,no)=>{let n=0,c=[];req.on('data',d=>{n+=d.length;if(n>limit){no(new Error('too large'));req.destroy()}else c.push(d)});req.on('end',()=>ok(Buffer.concat(c).toString('utf8')));req.on('error',no)})}
 const fails=new Map(); // login throttling per ip+user
