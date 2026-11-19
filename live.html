@@ -203,16 +203,29 @@ body.embed .mast{display:none}
 #lltbl th,#lltbl td{padding:7px 9px;text-align:left}#lltbl td{white-space:nowrap}
 #lltbl th{vertical-align:top;min-width:84px}
 #lltbl td{overflow:hidden;text-overflow:ellipsis;max-width:260px}
-#lltbl th:nth-child(1),#lltbl td:nth-child(1){width:120px;min-width:120px;max-width:120px}
-#lltbl th:nth-child(2),#lltbl td:nth-child(2){width:72px;min-width:72px;max-width:72px}
-#lltbl th:nth-child(3),#lltbl td:nth-child(3){width:112px;min-width:112px;max-width:112px}
 #lltbl th:nth-child(-n+3),#lltbl td:nth-child(-n+3){position:sticky;z-index:1;background:var(--surface)}
 #lltbl th:nth-child(-n+3){background:var(--head,var(--surface));z-index:3}
-#lltbl th:nth-child(1),#lltbl td:nth-child(1){left:0}
-#lltbl th:nth-child(2),#lltbl td:nth-child(2){left:120px}
-#lltbl th:nth-child(3),#lltbl td:nth-child(3){left:192px;border-right:2px solid var(--line)}
+#lltbl th:nth-child(3),#lltbl td:nth-child(3){border-right:2px solid var(--line)}
 #lltbl thead th{position:sticky;top:0}
-#lltbl thead th:nth-child(-n+3){z-index:4}#lltbl .llh{display:block;margin-bottom:4px}
+#lltbl thead th:nth-child(-n+3){z-index:4}#lltbl .llh{display:block;min-height:2.7em;line-height:1.3;margin-bottom:4px;padding-right:6px}
+#lltbl th{position:sticky}
+.lls{color:var(--accent);font-size:10px}
+.llsort{display:flex;gap:6px;margin-bottom:8px}.llsort button{flex:1;font:inherit;font-size:12px;padding:5px 4px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}.llsort button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.llr{position:absolute;top:0;right:0;width:7px;height:100%;cursor:col-resize;z-index:5}
+.llr:hover,.llr.on{background:color-mix(in srgb,var(--accent) 45%,transparent)}
+.llf{box-sizing:border-box;width:100%;min-height:28px;padding:3px 18px 3px 7px;font:inherit;font-size:12px;font-weight:400;text-align:left;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);cursor:pointer;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 11px) 12px,calc(100% - 7px) 12px;background-size:4px 4px,4px 4px;background-repeat:no-repeat}
+.llf.on{border-color:var(--accent);background-color:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.llpop{position:fixed;z-index:50;width:250px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:10px;font-size:13px}
+.llpop input[type=search]{box-sizing:border-box;width:100%;min-width:0;min-height:30px;margin-bottom:8px;padding:4px 8px;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.llpop label{display:flex;align-items:center;gap:8px;padding:3px 2px;cursor:pointer}
+.llpop input[type=checkbox]{min-width:0;width:15px;height:15px;margin:0;flex:none}
+.llpop .llall{border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:4px;font-weight:600}
+.llpl{max-height:230px;overflow:auto}
+.llpl label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.llpl label em{font-style:normal;color:var(--muted);font-size:11.5px}
+.llpb{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.llpb button{font:inherit;font-size:13px;padding:5px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.llpb button.p{background:var(--accent);border-color:var(--accent);color:#fff}.llpb button:disabled{opacity:.45;cursor:default}
+.llnote{color:var(--muted);font-size:11.5px;padding:4px 2px}
 #lltbl th select,#lltbl th input{box-sizing:border-box;width:100%;min-width:0;max-width:100%;min-height:28px;padding:3px 6px;font:inherit;font-size:12px;font-weight:400;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
 @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
 </style>
@@ -2683,12 +2696,55 @@ function llData(){
   if(LL.cache.wb!==WB)LL.cache={wb:WB,D:TBL.Deployed&&TBL.Deployed.ws?llBuild(TBL.Deployed):null,P:TBL.Pullout&&TBL.Pullout.ws?llBuild(TBL.Pullout):null};
   return LL.cache;
 }
+function llTitle(h){return String(h).trim().toLowerCase().replace(/(^|[\s\/\-(])([a-z])/g,function(m,a,b){return a+b.toUpperCase()}).replace(/\b(Tid|Pm|Slm|Flm|Atm)\b/g,function(w){return w.toUpperCase()})}
+LL.w={D:{},P:{}};LL.s={D:null,P:null};
+function llW(i){var W=LL.w[LL.kind];if(W[i]!==undefined)return W[i];return i===0?(LL.kind==='P'?190:120):i===1?86:i===2?112:null}
+function llStyle(){
+  var el=document.getElementById('llstyle');if(!el){el=document.createElement('style');el.id='llstyle';document.head.appendChild(el)}
+  var css='',w0=llW(0),w1=llW(1);
+  for(var i=0;i<11;i++){var w=llW(i);if(w===null)continue;var k=i+1;
+    css+='#lltbl th:nth-child('+k+'),#lltbl td:nth-child('+k+'){width:'+w+'px;min-width:'+w+'px;max-width:'+w+'px}'}
+  css+='#lltbl th:nth-child(1),#lltbl td:nth-child(1){left:0}#lltbl th:nth-child(2),#lltbl td:nth-child(2){left:'+w0+'px}#lltbl th:nth-child(3),#lltbl td:nth-child(3){left:'+(w0+w1)+'px}';
+  el.textContent=css;
+}
+function llSelOf(c){ /* the Bank column and the bank rail are one filter */
+  if(c===1)return(typeof SELB!=='undefined'&&SELB.length)?SELB.slice():null;
+  var f=LL.f[LL.kind][c];return f&&f.length?f:null;
+}
+function llBtn(c){var f=llSelOf(c),n=f?f.length:0;return{n:n,lab:n?(n===1?(f[0]===''?'(Blank)':f[0]):n+(c===1?' sel.':' selected')):'All',tip:n?f.join(', '):'Filter'}}
+function llSync(){var b=document.querySelector('#lltbl .llf[data-c="1"]');if(!b)return;var x=llBtn(1);b.textContent=x.lab;b.title=x.tip;b.classList.toggle('on',!!x.n)}
 function llHeadHtml(cur){
   var F=LL.f[LL.kind];
   return'<thead><tr>'+cur.head.map(function(h,i){
-    var o=cur.opts[i],ctl=o?'<select data-c="'+i+'" aria-label="Filter '+esc(h)+'"><option value="">All</option>'+o.map(function(v){var val=v===''?'__blank__':v;return'<option value="'+esc(val)+'"'+(F[i]===val?' selected':'')+'>'+(v===''?'(blank)':esc(v))+'</option>'}).join('')+'</select>'
-      :'<input type="search" data-c="'+i+'" placeholder="Filter" aria-label="Filter '+esc(h)+'" value="'+esc(F[i]||'')+'">';
-    return'<th><span class="llh">'+esc(h)+'</span>'+ctl+'</th>'}).join('')+'</tr></thead><tbody></tbody>';
+    var bt=llBtn(i),n=bt.n,lab=esc(bt.lab);
+    var so=LL.s[LL.kind],ar=so&&so.c===i?' <b class="lls">'+(so.d>0?'▲':'▼')+'</b>':'';
+    return'<th><span class="llh">'+esc(llTitle(h))+ar+'</span><button type="button" class="llf'+(n?' on':'')+'" data-c="'+i+'" aria-label="Filter '+esc(llTitle(h))+'" title="'+esc(bt.tip)+'">'+lab+'</button><i class="llr" data-c="'+i+'" title="Drag to resize, double-click to reset"></i></th>'}).join('')+'</tr></thead><tbody></tbody>';
+}
+function llKey(v){var m=/^(\d\d)\/(\d\d)\/(\d{4})$/.exec(v);return m?m[3]+m[1]+m[2]:v}
+function llVals(cur,c){
+  if(!cur.vc)cur.vc={};if(cur.vc[c])return cur.vc[c];
+  var m={};cur.rows.forEach(function(r){m[r[c]]=(m[r[c]]||0)+1});
+  return cur.vc[c]=Object.keys(m).sort(function(a,b){return llKey(a).localeCompare(llKey(b),undefined,{numeric:true,sensitivity:'base'})}).map(function(v){return[v,m[v]]});
+}
+var LLP={c:-1,sel:null,vals:null};
+function llPopClose(){var p=document.getElementById('llpop');if(p)p.remove();LLP.c=-1}
+function llPopList(){
+  var p=document.getElementById('llpop');if(!p)return;
+  var q=p.querySelector('input[type=search]').value.trim().toLowerCase(),vis=LLP.vals.filter(function(x){return !q||(x[0]===''?'(blank)':x[0]).toLowerCase().indexOf(q)>=0}),cap=300,shown=vis.slice(0,cap);
+  p.querySelector('.llpl').innerHTML=shown.map(function(x,i){return'<label><input type="checkbox" data-v="'+esc(x[0])+'"'+(LLP.sel[x[0]]?' checked':'')+'><span>'+esc(x[0]===''?'(Blank)':x[0])+'</span><em>'+x[1]+'</em></label>'}).join('')+(vis.length>cap?'<div class="llnote">Showing the first '+cap+' of '+vis.length+'. Type to narrow down.</div>':'')+(vis.length?'':'<div class="llnote">No matches.</div>');
+  var all=p.querySelector('#llpall');all.checked=vis.length>0&&vis.every(function(x){return LLP.sel[x[0]]});all.disabled=!vis.length;
+  p.querySelector('.llpb .p').disabled=!LLP.vals.some(function(x){return LLP.sel[x[0]]});
+  LLP.vis=vis;
+}
+function llPopOpen(btn,cur){
+  llPopClose();var c=+btn.getAttribute('data-c'),F=llSelOf(c),FU=c===1&&F?F.map(function(v){return String(v).toUpperCase()}):null;
+  LLP.c=c;LLP.vals=llVals(cur,c);LLP.sel={};LLP.vals.forEach(function(x){LLP.sel[x[0]]=!F||!F.length||(FU?FU.indexOf(String(x[0]).toUpperCase())>=0:F.indexOf(x[0])>=0)});
+  var p=document.createElement('div');p.id='llpop';p.className='llpop';
+  var so=LL.s[LL.kind],sa=so&&so.c===c&&so.d>0,sz=so&&so.c===c&&so.d<0;
+  p.innerHTML='<div class="llsort"><button type="button" id="llsa" class="'+(sa?'on':'')+'">Sort A to Z</button><button type="button" id="llsz" class="'+(sz?'on':'')+'">Sort Z to A</button></div><input type="search" placeholder="Search" aria-label="Search values" autocomplete="off"><label class="llall"><input type="checkbox" id="llpall"><span>(Select all)</span></label><div class="llpl"></div><div class="llpb"><button type="button" id="llpclr">Clear filter</button><button type="button" class="p" id="llpok">OK</button></div>';
+  document.body.appendChild(p);
+  var r=btn.getBoundingClientRect(),w=250;p.style.left=Math.max(8,Math.min(r.left,window.innerWidth-w-8))+'px';p.style.top=(r.bottom+4)+'px';
+  llPopList();p.querySelector('input[type=search]').focus();
 }
 function renderList(){
   var d=llData(),card=$('livelist');
@@ -2699,18 +2755,19 @@ function renderList(){
   $('ll-d').setAttribute('aria-pressed',LL.kind==='D');$('ll-p').setAttribute('aria-pressed',LL.kind==='P');
   var cur=LL.kind==='D'?d.D:d.P;
   if(!cur){$('lltbl').innerHTML='<tbody><tr><td>This list was not found in the workbook.</td></tr></tbody>';LL.hdr=null;$('llinfo').textContent='';return}
-  if(LL.hdr!==cur){$('lltbl').innerHTML=llHeadHtml(cur);LL.hdr=cur}
-  var q=LL.q.trim().toLowerCase(),sel=(typeof SELB!=='undefined'&&SELB.length)?SELB:null,F=LL.f[LL.kind],fk=Object.keys(F).filter(function(k){return F[k]}),out=[];
+  if(LL.hdr!==cur){$('lltbl').innerHTML=llHeadHtml(cur);LL.hdr=cur}llStyle();llSync();
+  var q=LL.q.trim().toLowerCase(),sel=(typeof SELB!=='undefined'&&SELB.length)?SELB:null,F=LL.f[LL.kind],fk=Object.keys(F).filter(function(k){return F[k]&&F[k].length}),out=[],FS={};fk.forEach(function(k){FS[k]={};F[k].forEach(function(v){FS[k][v]=1})});
   for(var i=0;i<cur.rows.length;i++){
     var r=cur.rows[i],ok=true;
     if(sel&&sel.indexOf(String(r[1]).toUpperCase())<0)continue;
-    for(var j=0;j<fk.length&&ok;j++){var c=+fk[j],v=F[c];
-      if(cur.opts[c])ok=v==='__blank__'?r[c]==='':r[c]===v;else ok=String(r[c]).toLowerCase().indexOf(v.toLowerCase())>=0}
+    for(var j=0;j<fk.length&&ok;j++){var c=+fk[j];ok=FS[c][r[c]]===1}
     if(!ok)continue;
     if(q&&r.join('\u0001').toLowerCase().indexOf(q)<0)continue;
     out.push(r);
   }
-  var PG=500,pk=LL.kind+'|'+q+'|'+JSON.stringify(F)+'|'+(sel||[]).join(',');if(LL.pk!==pk){LL.pk=pk;LL.page=0}var pages=Math.max(1,Math.ceil(out.length/PG));if(LL.page>=pages)LL.page=pages-1;if(LL.page<0)LL.page=0;var shown=out.slice(LL.page*PG,LL.page*PG+PG),active=!!(q||fk.length);
+  var SO=LL.s[LL.kind];
+  if(SO){var sc=SO.c,sd=SO.d;out.sort(function(a,b){var x=a[sc],y=b[sc];if(x===''&&y==='')return 0;if(x==='')return 1;if(y==='')return -1;return sd*llKey(x).localeCompare(llKey(y),undefined,{numeric:true,sensitivity:'base'})})}
+  var PG=500,pk=LL.kind+'|'+q+'|'+JSON.stringify(SO)+JSON.stringify(F)+'|'+(sel||[]).join(',');if(LL.pk!==pk){LL.pk=pk;LL.page=0}var pages=Math.max(1,Math.ceil(out.length/PG));if(LL.page>=pages)LL.page=pages-1;if(LL.page<0)LL.page=0;var shown=out.slice(LL.page*PG,LL.page*PG+PG),active=!!(q||fk.length||SO);
   $('llclr').classList.toggle('hide',!active);
   $('llinfo').textContent=(LL.kind==='D'?'Deployed_List':'Pullout_List')+' · machines with a serial number · '+(out.length===cur.rows.length?'all ':N(out.length)+' of ')+N(cur.rows.length)+(sel?' · bank: '+sel.join(', '):'')+(fk.length?' · '+fk.length+' column filter'+(fk.length>1?'s':''):'')+(out.length>PG?' · showing the first '+PG+', search or filter to narrow down':'');
   $('llpg').innerHTML='';
@@ -2724,9 +2781,25 @@ $('llpg').addEventListener('click',function(e){var id=e.target&&e.target.id;if(i
 (function(){var _rd=renderDash;renderDash=function(){_rd.apply(this,arguments);renderList()}})();
 $('ll-d').onclick=function(){LL.kind='D';renderList()};$('ll-p').onclick=function(){LL.kind='P';renderList()};
 (function(){var t=0;$('llq').oninput=function(){clearTimeout(t);var v=this.value;t=setTimeout(function(){LL.q=v;renderList()},150)};
-  $('lltbl').addEventListener('input',function(e){var el=e.target;if(el.tagName!=='INPUT')return;clearTimeout(t);t=setTimeout(function(){LL.f[LL.kind][el.getAttribute('data-c')]=el.value.trim();renderList()},150)});
-  $('lltbl').addEventListener('change',function(e){var el=e.target;if(el.tagName!=='SELECT')return;LL.f[LL.kind][el.getAttribute('data-c')]=el.value;renderList()});
-  $('llclr').onclick=function(){LL.q='';LL.f={D:{},P:{}};$('llq').value='';LL.hdr=null;renderList()}})();
+  $('lltbl').addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.llf');if(!b)return;e.stopPropagation();if(LLP.c===+b.getAttribute('data-c')&&document.getElementById('llpop')){llPopClose();return}llPopOpen(b,LL.kind==='D'?llData().D:llData().P)});
+  $('lltbl').addEventListener('dblclick',function(e){var h=e.target.closest&&e.target.closest('.llr');if(!h)return;delete LL.w[LL.kind][+h.getAttribute('data-c')];llStyle()});
+  $('lltbl').addEventListener('mousedown',function(e){var h=e.target.closest&&e.target.closest('.llr');if(!h)return;e.preventDefault();llPopClose();
+    var i=+h.getAttribute('data-c'),th=h.parentNode,x0=e.clientX,w0=th.getBoundingClientRect().width;h.classList.add('on');
+    function mv(ev){LL.w[LL.kind][i]=Math.max(48,Math.round(w0+ev.clientX-x0));llStyle()}
+    function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);h.classList.remove('on')}
+    document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)});
+  document.addEventListener('mousedown',function(e){var p=document.getElementById('llpop');if(p&&!p.contains(e.target)&&!(e.target.closest&&e.target.closest('.llf')))llPopClose()});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')llPopClose()});
+  document.addEventListener('input',function(e){var p=document.getElementById('llpop');if(p&&e.target===p.querySelector('input[type=search]'))llPopList()});
+  document.addEventListener('change',function(e){var p=document.getElementById('llpop');if(!p||!p.contains(e.target))return;var t=e.target;
+    if(t.id==='llpall'){LLP.vis.forEach(function(x){LLP.sel[x[0]]=t.checked})}else if(t.hasAttribute('data-v')){LLP.sel[t.getAttribute('data-v')]=t.checked}llPopList()});
+  document.addEventListener('click',function(e){if(e.target.id==='llsa'||e.target.id==='llsz'){var d=e.target.id==='llsa'?1:-1,o=LL.s[LL.kind];LL.s[LL.kind]=(o&&o.c===LLP.c&&o.d===d)?null:{c:LLP.c,d:d};llPopClose();LL.hdr=null;renderList();return}
+  if(e.target.id==='llpclr'){if(LLP.c===1){SELB=[];llPopClose();renderDash();return}delete LL.f[LL.kind][LLP.c];llPopClose();LL.hdr=null;renderList()}
+    else if(e.target.id==='llpok'){var sel=LLP.vals.filter(function(x){return LLP.sel[x[0]]}).map(function(x){return x[0]});
+      if(LLP.c===1){SELB=sel.length===LLP.vals.length?[]:sel.map(function(v){return String(v).toUpperCase()});llPopClose();renderDash();return}
+      if(sel.length===LLP.vals.length)delete LL.f[LL.kind][LLP.c];else LL.f[LL.kind][LLP.c]=sel;llPopClose();LL.hdr=null;renderList()}});
+  document.querySelector('#livelist .scroll').addEventListener('scroll',llPopClose);
+  $('llclr').onclick=function(){LL.q='';LL.f={D:{},P:{}};LL.s={D:null,P:null};$('llq').value='';LL.hdr=null;renderList()}})();
 
 /* ---------- Live window: one running OneDrive workbook, no uploads ---------- */
 var LIVE={loaded:'',busy:false};
