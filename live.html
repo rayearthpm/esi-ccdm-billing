@@ -198,8 +198,22 @@ body.sumoff #p-dash{display:none}
 .livebar.wait .dot{background:var(--accent)}
 .livebar b{font-weight:700}.livebar code{background:var(--head);padding:1px 6px;border-radius:5px;font-size:12.5px}
 body.embed .mast{display:none}
-#lltbl th{vertical-align:top;min-width:96px}#lltbl .llh{display:block;margin-bottom:4px}
-#lltbl th select,#lltbl th input{width:100%;min-height:28px;padding:3px 6px;font:inherit;font-size:12px;font-weight:400;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+#livelist .scroll{max-height:590px;overflow:auto}
+#lltbl{border-collapse:separate;border-spacing:0}
+#lltbl th,#lltbl td{padding:7px 9px;text-align:left}#lltbl td{white-space:nowrap}
+#lltbl th{vertical-align:top;min-width:84px}
+#lltbl td{overflow:hidden;text-overflow:ellipsis;max-width:260px}
+#lltbl th:nth-child(1),#lltbl td:nth-child(1){width:120px;min-width:120px;max-width:120px}
+#lltbl th:nth-child(2),#lltbl td:nth-child(2){width:72px;min-width:72px;max-width:72px}
+#lltbl th:nth-child(3),#lltbl td:nth-child(3){width:112px;min-width:112px;max-width:112px}
+#lltbl th:nth-child(-n+3),#lltbl td:nth-child(-n+3){position:sticky;z-index:1;background:var(--surface)}
+#lltbl th:nth-child(-n+3){background:var(--head,var(--surface));z-index:3}
+#lltbl th:nth-child(1),#lltbl td:nth-child(1){left:0}
+#lltbl th:nth-child(2),#lltbl td:nth-child(2){left:120px}
+#lltbl th:nth-child(3),#lltbl td:nth-child(3){left:192px;border-right:2px solid var(--line)}
+#lltbl thead th{position:sticky;top:0}
+#lltbl thead th:nth-child(-n+3){z-index:4}#lltbl .llh{display:block;margin-bottom:4px}
+#lltbl th select,#lltbl th input{box-sizing:border-box;width:100%;min-width:0;max-width:100%;min-height:28px;padding:3px 6px;font:inherit;font-size:12px;font-weight:400;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
 @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
 </style>
 </head>
@@ -2696,11 +2710,11 @@ function renderList(){
     if(q&&r.join('\u0001').toLowerCase().indexOf(q)<0)continue;
     out.push(r);
   }
-  var PG=30,pk=LL.kind+'|'+q+'|'+JSON.stringify(F)+'|'+(sel||[]).join(',');if(LL.pk!==pk){LL.pk=pk;LL.page=0}var pages=Math.max(1,Math.ceil(out.length/PG));if(LL.page>=pages)LL.page=pages-1;if(LL.page<0)LL.page=0;var shown=out.slice(LL.page*PG,LL.page*PG+PG),active=!!(q||fk.length);
+  var PG=500,pk=LL.kind+'|'+q+'|'+JSON.stringify(F)+'|'+(sel||[]).join(',');if(LL.pk!==pk){LL.pk=pk;LL.page=0}var pages=Math.max(1,Math.ceil(out.length/PG));if(LL.page>=pages)LL.page=pages-1;if(LL.page<0)LL.page=0;var shown=out.slice(LL.page*PG,LL.page*PG+PG),active=!!(q||fk.length);
   $('llclr').classList.toggle('hide',!active);
-  $('llinfo').textContent=(LL.kind==='D'?'Deployed_List':'Pullout_List')+' · machines with a serial number · '+(out.length===cur.rows.length?'all ':N(out.length)+' of ')+N(cur.rows.length)+(sel?' · bank: '+sel.join(', '):'')+(fk.length?' · '+fk.length+' column filter'+(fk.length>1?'s':''):'')+'';
-  $('llpg').innerHTML=out.length>PG?'<button type="button" id="llprev"'+(LL.page<=0?' disabled':'')+'>‹ Prev</button><span>'+N(LL.page*PG+1)+'–'+N(Math.min(out.length,LL.page*PG+PG))+' of '+N(out.length)+'</span><button type="button" id="llnext"'+(LL.page>=pages-1?' disabled':'')+'>Next ›</button>':'';
-  $('lltbl').querySelector('tbody').innerHTML=shown.length?shown.map(function(r){return'<tr>'+r.map(function(v){return'<td>'+esc(v)+'</td>'}).join('')+'</tr>'}).join(''):'<tr><td colspan="'+cur.head.length+'" style="text-align:center;color:var(--muted);padding:20px">No machines match.</td></tr>';
+  $('llinfo').textContent=(LL.kind==='D'?'Deployed_List':'Pullout_List')+' · machines with a serial number · '+(out.length===cur.rows.length?'all ':N(out.length)+' of ')+N(cur.rows.length)+(sel?' · bank: '+sel.join(', '):'')+(fk.length?' · '+fk.length+' column filter'+(fk.length>1?'s':''):'')+(out.length>PG?' · showing the first '+PG+', search or filter to narrow down':'');
+  $('llpg').innerHTML='';
+  $('lltbl').querySelector('tbody').innerHTML=shown.length?shown.map(function(r){return'<tr>'+r.map(function(v){return'<td title="'+esc(v)+'">'+esc(v)+'</td>'}).join('')+'</tr>'}).join(''):'<tr><td colspan="'+cur.head.length+'" style="text-align:center;color:var(--muted);padding:20px">No machines match.</td></tr>';
 }
 $('embbill').onclick=function(){try{parent.postMessage({esiGo:'billing'},location.origin)}catch(e){}};
 $('llpg').addEventListener('click',function(e){var id=e.target&&e.target.id;if(id==='llprev'){LL.page--;renderList()}else if(id==='llnext'){LL.page++;renderList()}});
