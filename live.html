@@ -2645,7 +2645,7 @@ function preview(bank,type){
   if(PV.bank!==bank||PV.type!==type){$('q').value='';PV.bank=bank;PV.type=type}
   PV.show=function(){preview(bank,type)};
   var chs=OUT.checks||[],bad=chs.filter(function(c){return !c.ok}).length;
-  $('stats').innerHTML='<div class="stat"><span>Machines billed</span><b>'+(OUT.count||OUT.rows.length).toLocaleString()+'</b></div><div class="stat"><span>Checks passed</span><b>'+(chs.length-bad)+' of '+chs.length+'</b></div><div class="stat"><span>File name</span><b style="font-size:13px;font-weight:600">'+esc(OUT.fileName||OUT.name)+'</b></div>';
+  $('stats').innerHTML='<div class="stat"><span>Machines billed</span><b>'+(OUT.count||OUT.rows.length).toLocaleString()+'</b></div>'+(typeof OUT.grand==='number'?'<div class="stat"><span>Totaled Billed Amount</span><b>₱'+OUT.grand.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</b></div>':'')+'<div class="stat"><span>Checks passed</span><b>'+(chs.length-bad)+' of '+chs.length+'</b></div><div class="stat"><span>File name</span><b style="font-size:13px;font-weight:600">'+esc(OUT.fileName||OUT.name)+'</b></div>';
   var mc=OUT.money||[],H='<tr>'+OUT.headers.map(function(h,i){var s=OUT.rows[0]?OUT.rows[0][i]:null;return'<th class="'+(typeof s==='number'||mc.indexOf(i)>=0?'n':'')+'">'+esc(h)+'</th>'}).join('')+'</tr>';
   if(OUT.totals)H+='<tr class="tot">'+OUT.totals.map(function(v,i){var m=mc.indexOf(i)>=0;return'<td class="'+(m||typeof v==='number'?'n':'')+'">'+esc(v===''||v===null?'':(typeof v==='number'?fmtCell(v,m):v))+'</td>'}).join('')+'</tr>';
   var q=($('q').value||'').trim().toLowerCase(),rows=OUT.rows;
@@ -3230,7 +3230,7 @@ var CONS_MAP=[
  [32,/^cash sorting count/i,'c'],[33,/^cash sorting charges/i,'a'],
  [34,/monitoring of alarm|centralized alarm/i,'a'],[35,/^incident management/i,'a'],[36,/^spare parts? maintenance/i,'a'],
  [37,/^system management/i,'a'],[38,/^vapt/i,'a'],[39,/^insurance/i,'a'],[40,/^penalties/i,'a'],[41,/^additional company/i,'a'],
- [42,/^(other charges|other services|spare part \/ other|thermal|installation charges|toll|cash storage fee|deployment cost|cash delivery charges|excess coins charges|enrollment|user enrollment|additional company enrollment)/i,'a']
+ [42,/^(other charges|other services|spare part \/ other|thermal|installation charges|toll|servicing cost|cash storage fee|deployment cost|cash delivery charges|excess coins charges|enrollment|user enrollment|additional company enrollment)/i,'a']
 ];
 var CONS_AMT=[16,17,19,21,23,25,27,29,31,33,34,35,36,37,38,39,40,41,42];
 function consNorm(h){return String(h).replace(/\s*₱.*$/,'').replace(/\s+/g,' ').trim()}
@@ -3290,6 +3290,7 @@ function consBuild(ctx){
         iDist=idx(H,/^distance$/i),iDep=idx(H,/^deployment date$/i),iPul=idx(H,/^pullout date$/i),iCy=idx(H,/^cycle$/i),iLoc=idx(H,/^loc code$/i),iCap=idx(H,/^capacity$/i),
         iTot=idx(H,/^total( amount)?$/i),iLR=idx(H,/^lease rental charges$/i),iST=idx(H,/^services total$/i);
       var plan=CONS_MAP.map(function(m){var cols=[];H.forEach(function(h,i){if(m[1].test(h)){var isAmt=mc.indexOf(i)>=0||/charge|amount|fee|cost/i.test(h)||i===iLR;if((m[2]==='a')===isAmt)cols.push(i)}});return[m[0],cols]});
+      if(bank==='RCBC')plan=plan.filter(function(q){return q[0]<22||q[0]>27}); /* RCBC bills Servicing Cost (2 tucked in), not phone / FLM / SLM on top */
       o.rows.forEach(function(r){
         var v={};plan.forEach(function(p){if(!p[1].length)return;var s=0,any=false;p[1].forEach(function(i){var x=r[i];if(typeof x==='number'){s+=x;any=true}else if(x&&x.error||x==='#N/A')issues.errors++});if(any)v[p[0]]=s});
         var tot=bank==='BPI'?(iLR>=0&&iST>=0?consNum(r[iLR])+consNum(r[iST]):null):(iTot>=0&&typeof r[iTot]==='number'?r[iTot]:null);
@@ -3319,7 +3320,7 @@ function consGenerate(){
     var fn='CCDM_Servicing_Summary_'+c.ban.mon+'_'+c.ban.yr+'_ACCRUAL.xlsx';
     var prev=c.rows.map(function(r){return r.slice(0,44).map(function(v){return v instanceof Date?v:v})});
     var money=CONS_AMT.concat([43]);
-    OUT={name:'All banks consolidated',fileName:fn,headers:CONS_HEAD,rows:prev,totals:tot,money:money,checks:c.checks,count:n,shown:300,
+    OUT={name:'All banks consolidated',fileName:fn,headers:CONS_HEAD,rows:prev,totals:tot,money:money,checks:c.checks,count:n,shown:300,grand:tot[43],
       toXlsx:async function(){
         var wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('CCDM_Consolidated_Billing');
         var L=function(i){var s='';i++;while(i>0){var m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26)}return s};
