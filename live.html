@@ -2398,8 +2398,8 @@ function naHtml(){
     var open=!!NAOPEN[b],bad=(AMT.data.b&&AMT.data.b[b])||[];
     var h='<p class="nabad" data-b="'+esc(b)+'" role="button" tabindex="0" style="margin-top:10px;color:var(--bad);cursor:pointer;font-weight:600">'+(open?'▾':'▸')+' Estimate is short for '+esc(b)+': '+n[b]+' machine'+(n[b]>1?'s':'')+' with no price match (#N/A) – click to '+(open?'hide':'see which')+'</p>';
     if(open){
-      h+='<div style="max-height:240px;overflow:auto;border:1px solid var(--bad);border-radius:8px;margin-top:6px"><table style="width:100%;font-size:12px;border-collapse:collapse;color:var(--bad)"><tr style="text-align:left"><th style="padding:5px 8px">TID</th><th style="padding:5px 8px">Client</th><th style="padding:5px 8px">Serial</th><th style="padding:5px 8px">Capacity</th><th style="padding:5px 8px">Error in</th></tr>';
-      bad.slice(0,200).forEach(function(x){h+='<tr style="border-top:1px solid var(--line)"><td style="padding:4px 8px">'+esc(x.tid===null||x.tid===undefined?'':x.tid)+'</td><td style="padding:4px 8px">'+esc(x.name===null||x.name===undefined?'':x.name)+'</td><td style="padding:4px 8px">'+esc(x.ser===null||x.ser===undefined?'':x.ser)+'</td><td style="padding:4px 8px">'+esc(x.cap===null||x.cap===undefined||x.cap===''?'(blank)':(x.cap&&x.cap.error?x.cap.error:x.cap))+'</td><td style="padding:4px 8px">'+esc(x.cols.slice(0,3).join(', ')+(x.cols.length>3?' +'+(x.cols.length-3):''))+'</td></tr>'});
+      h+='<div style="max-height:240px;overflow:auto;border:1px solid var(--bad);border-radius:8px;margin-top:6px"><table style="width:100%;font-size:12px;border-collapse:collapse;color:var(--bad)"><tr style="text-align:left"><th style="padding:5px 8px">Machine Serial</th><th style="padding:5px 8px">TID</th><th style="padding:5px 8px">Client</th><th style="padding:5px 8px">Capacity</th><th style="padding:5px 8px">Error in</th></tr>';
+      bad.slice(0,200).forEach(function(x){h+='<tr style="border-top:1px solid var(--line)"><td style="padding:4px 8px">'+esc(x.ser===null||x.ser===undefined?'':x.ser)+'</td><td style="padding:4px 8px">'+esc(x.tid===null||x.tid===undefined?'':x.tid)+'</td><td style="padding:4px 8px">'+esc(x.name===null||x.name===undefined?'':x.name)+'</td><td style="padding:4px 8px">'+esc(x.cap===null||x.cap===undefined||x.cap===''?'(blank)':(x.cap&&x.cap.error?x.cap.error:x.cap))+'</td><td style="padding:4px 8px">'+esc(x.cols.slice(0,3).join(', ')+(x.cols.length>3?' +'+(x.cols.length-3):''))+'</td></tr>'});
       h+='</table></div>';
     }
     return h;
@@ -2843,7 +2843,12 @@ function llVal(x){ /* dates always show as mm/dd/yyyy */
 }
 function llBuild(t,wip){
   var ws=t.ws,cell=function(r,c){return ws[XLSX.utils.encode_cell({r:r,c:c})]};
-  var CC=wip?LLW_COLS:LL_COLS,head=CC.map(function(c){var x=cell(t.hr,c);return x?String(x.w!==undefined?x.w:x.v).trim():''}),rows=[];
+  var CC=wip?LLW_COLS:LL_COLS;
+  if(!wip){ /* Capacity goes right after Branch (found by its header, wherever it sits in the sheet) */
+    var ci=t.hdr.findIndex(function(h){return String(h).trim().toLowerCase()==='capacity'}),bi=CC.indexOf(23);
+    if(ci>=0&&bi>=0&&CC.indexOf(t.start+ci)<0){CC=CC.slice();CC.splice(bi+1,0,t.start+ci)}
+  }
+  var head=CC.map(function(c){var x=cell(t.hr,c);return x?String(x.w!==undefined?x.w:x.v).trim():''}),rows=[];
   for(var r=t.hr+1;r<=t.last;r++){
     var sx=cell(r,2),hs=!!sx&&sx.v!==undefined&&sx.v!==null&&String(sx.v).trim()!=='';
     if(wip){if(hs)continue;var wb1=cell(r,1),wt=cell(r,3);if(!((wb1&&String(wb1.v).trim()!=='')||(wt&&String(wt.v).trim()!=='')))continue}else if(!hs)continue;
@@ -2868,7 +2873,7 @@ function llFz(){var v=null;try{v=localStorage.getItem('esiFreeze')}catch(e){}if(
 function llStyle(){
   var el=document.getElementById('llstyle');if(!el){el=document.createElement('style');el.id='llstyle';document.head.appendChild(el)}
   var css='',w0=llW(0),w1=llW(1);
-  for(var i=0;i<11;i++){var w=llW(i);if(w===null)continue;var k=i+2;
+  for(var i=0;i<12;i++){var w=llW(i);if(w===null)continue;var k=i+2;
     css+='#lltbl th:nth-child('+k+'),#lltbl td:nth-child('+k+'){width:'+w+'px;min-width:'+w+'px;max-width:'+w+'px}'}
   var fz=llFz(),L=0;
   css+='#lltbl th:nth-child(1),#lltbl td:nth-child(1){width:46px;min-width:46px;max-width:46px}';
@@ -3205,9 +3210,9 @@ function livePreview(){
   });
   var s={};Object.keys(T).forEach(function(b){var k=A[b]/6000;s[b]={cash:Math.round(k),phone:Math.round(k/40),flm:Math.round(k/120),slm:Math.round(k/90),pm:b==='SBC'||b==='PNB'?3:0,
     x:SVC_ITEMS[b].map(function(it,i){return[it[1],Math.round(k/(i+1)/(i%3===2?9e9:1))]})}});
-  var H1=['Deployment Type','Bank','Machine S/N','TID','Machine Status','DEPLOYMENT DATE','Pull Out Date','Company','Branch','Service Type','Distance'],names=Object.keys(T),LD=[],LP=[],cos=['Wilcon Depot Inc','Capitol Commons Corp','SM Prime Holdings','Robinsons Land','Puregold Price Club','Ayala Land'];
-  for(var i=0;i<60;i++){var bk=names[i%names.length];LD.push(['Deployment',bk,'721A'+('0000'+(41+i*7)).slice(-4),String(6001+i*3),i%17===0?'Not Operational':'Operational','0'+(Math.floor(i*i/9)%9+1)+'/1'+(i%9)+'/2026','',cos[i%cos.length],cos[i%cos.length]+' Branch '+(i+1),i%11===0?'Far Flung':'Regular',i%11===0?String(40+i):'']);}
-  for(var j=0;j<18;j++){var bk2=names[j%names.length];LP.push([j%4===0?'(1) Redeployed to RCBC':'',bk2,'Kun510B'+(40486+j*13),String(6871-j*5),'Terminated','0'+(j%9+1)+'/2'+(j%8)+'/2022','0'+((j*j)%9+1)+'/0'+(j%9+1)+'/2026',cos[j%cos.length],cos[j%cos.length]+' Main',j%5===0?'Far Flung':'Regular',j%5===0?String(60+j):'']);}
+  var H1=['Deployment Type','Bank','Machine S/N','TID','Machine Status','DEPLOYMENT DATE','Pull Out Date','Company','Branch','CAPACITY','Service Type','Distance'],names=Object.keys(T),LD=[],LP=[],cos=['Wilcon Depot Inc','Capitol Commons Corp','SM Prime Holdings','Robinsons Land','Puregold Price Club','Ayala Land'];
+  for(var i=0;i<60;i++){var bk=names[i%names.length];LD.push(['Deployment',bk,'721A'+('0000'+(41+i*7)).slice(-4),String(6001+i*3),i%17===0?'Not Operational':'Operational','0'+(Math.floor(i*i/9)%9+1)+'/1'+(i%9)+'/2026','',cos[i%cos.length],cos[i%cos.length]+' Branch '+(i+1),i%3===0?'20K':'10K',i%11===0?'Far Flung':'Regular',i%11===0?String(40+i):'']);}
+  for(var j=0;j<18;j++){var bk2=names[j%names.length];LP.push([j%4===0?'(1) Redeployed to RCBC':'',bk2,'Kun510B'+(40486+j*13),String(6871-j*5),'Terminated','0'+(j%9+1)+'/2'+(j%8)+'/2022','0'+((j*j)%9+1)+'/0'+(j%9+1)+'/2026',cos[j%cos.length],cos[j%cos.length]+' Main',j%3===0?'20K':'10K',j%5===0?'Far Flung':'Regular',j%5===0?String(60+j):'']);}
   var amt={v:A,e:{},s:s};
   WB={SheetNames:[]};TBL={Deployed:{},Pullout:{}};VIEW={key:'2026-11',mc:mc,amt:amt,stk:{KUN505:{sto:1,alo:0,tot:400},KUN510:{sto:7,alo:9,tot:2010},KUN520:{sto:0,alo:4,tot:700},RCD:{sto:40,alo:0,tot:45}}};$('cutoff').value='2026-11';AMT={key:'2026-11',data:amt};
   var A0={BDO:34.1e6,BPI:1.95e6,CBC:2.1e6,MBTC:6.9e6,PNB:2.2e6,RCBC:8.1e6,SBC:2.7e6};
