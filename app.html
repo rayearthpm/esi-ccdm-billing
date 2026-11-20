@@ -102,6 +102,7 @@ body.wide{font-size:14px}
 .tile b{display:block;font-size:26px;line-height:1.2;font-weight:600;font-variant-numeric:tabular-nums}
 .tile small{color:var(--muted);font-size:12px}
 .tile.dep b{color:var(--accent)}
+.tiles.t5{grid-template-columns:repeat(5,minmax(0,1fr))}.tile.tst b{color:var(--muted,#8a94a6)}@media (max-width:760px){.tiles.t5{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .bar{display:inline-block;height:8px;border-radius:4px;background:var(--accent);vertical-align:middle;min-width:2px}
 .bar.pul{background:var(--muted)}
 .dash-empty{color:var(--muted);font-size:13px;padding:6px 0}
@@ -2108,18 +2109,18 @@ function showSheets(fn){
 
 /* ---------- Machine counts dashboard ---------- */
 function combineMc(mc,S){
-  var base=mc['']||{banks:{},btot:{},types:{},dep:0,pul:0,notop:0};
+  var base=mc['']||{banks:{},btot:{},types:{},dep:0,pul:0,notop:0,test:0};
   if(!S.length)return base;
   if(S.length===1)return mc[S[0]]||base;
-  var o={banks:base.banks,btot:base.btot,types:{},dep:0,pul:0,notop:0};
-  S.forEach(function(b){var m=mc[b];if(!m)return;o.dep+=m.dep;o.pul+=m.pul;o.notop+=m.notop;
+  var o={banks:base.banks,btot:base.btot,types:{},dep:0,pul:0,notop:0,test:0};
+  S.forEach(function(b){var m=mc[b];if(!m)return;o.dep+=m.dep;o.pul+=m.pul;o.notop+=m.notop;o.test+=m.test||0;
     Object.keys(m.types).forEach(function(t){var x=o.types[t]||(o.types[t]={dep:0,pul:0});x.dep+=m.types[t].dep;x.pul+=m.types[t].pul})});
   return o;
 }
 function machineCounts(bank,usePer){
   var SB=Array.isArray(bank)?bank:(bank?[bank]:[]),P=usePer&&PER?PER:null;
   if(VIEW)return combineMc(VIEW.mc,SB);
-  var out={banks:{},types:{},btot:{},dep:0,pul:0,notop:0};
+  var out={banks:{},types:{},btot:{},dep:0,pul:0,notop:0,test:0};
   function scan(t,kind){
     if(!t)return;
     var iB=tcol(t,'Bank'),iS=tcol(t,'Machine Status'),iM=tcol(t,'Machine Type');
@@ -2130,15 +2131,17 @@ function machineCounts(bank,usePer){
     if(P&&iDt<0)return;
     for(var r=t.hr+1;r<=t.last;r++){
       if(LA&&LA.indexOf(String(tval(t,r,iB)||'').trim().toUpperCase())<0)continue;
-      var st=String(tval(t,r,iS)||'').trim().toLowerCase(),isDep=kind==='D'&&(st==='operational'||st==='not operational'),isPul=kind==='P'&&st==='pull out';
+      var st=String(tval(t,r,iS)||'').trim().toLowerCase(),isDep=kind==='D'&&(st==='operational'||st==='not operational'),isPul=kind==='P'&&st==='pull out',isTest=kind==='D'&&(st==='test machines'||st==='test machine');
       if(P){ /* movement in the period: deployed by Deployment Date, pulled out by Pull Out Date (any status), serial required */
         var dv=tval(t,r,iDt);if(typeof dv==='string'){var dm=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(dv.trim());dv=dm?new Date(+dm[3]<100?2000+ +dm[3]:+dm[3],+dm[1]-1,+dm[2]):null}
         if(!(dv instanceof Date)||isNaN(dv)||dv.getFullYear()!==P.y||(P.m!==null&&dv.getMonth()!==P.m))continue;
         if(iSn>=0&&!String(tval(t,r,iSn)||'').trim())continue;
         isPul=kind==='P';
       }
-      if(!isDep&&!isPul)continue;
+      if(!isDep&&!isPul&&!isTest)continue;
       var b=String(tval(t,r,iB)||'').trim();if(!b)b='(no bank)';
+      if(isTest){ /* Test Machines are not billable: counted on their own, never in the totals or the machine type table */
+        if(!SB.length||SB.indexOf(b.toUpperCase())>=0)out.test++;continue}
       out.banks[b.toUpperCase()]=1;out.btot[b.toUpperCase()]=(out.btot[b.toUpperCase()]||0)+1;
       if(SB.length&&SB.indexOf(b.toUpperCase())<0)continue;
       var m=String(tval(t,r,iM)||'').trim().toUpperCase()||'(blank)',o=out.types[m]||(out.types[m]={dep:0,pul:0});
@@ -2413,9 +2416,10 @@ function renderDash(){
   var stk=stockInv(),stkT={sto:0,alo:0,tot:0};
   if(stk)Object.keys(stk).forEach(function(m){stkT.sto+=stk[m].sto;stkT.alo+=stk[m].alo;stkT.tot+=stk[m].tot||0});
   var hasP=!!(stk&&stkT.tot>0);
-  var tiles='<div class="tiles"><div class="tile dep"><span>Deployed</span><b>'+N(c.dep)+'</b><small>'+N(c.dep-c.notop)+' operational · '+N(c.notop)+' not operational</small></div>'+
+  var tiles='<div class="tiles'+(true?' t5':'')+'"><div class="tile dep"><span>Total Billable Machines</span><b>'+N(c.dep+c.pul)+'</b><small>'+esc(label)+'</small></div>'+
+    '<div class="tile"><span>Deployed</span><b>'+N(c.dep)+'</b><small>'+N(c.dep-c.notop)+' operational · '+N(c.notop)+' not operational</small></div>'+
     '<div class="tile"><span>Pullout</span><b>'+N(c.pul)+'</b><small>machines pulled out</small></div>'+
-    '<div class="tile"><span>Total machines</span><b>'+N(c.dep+c.pul)+'</b><small>'+esc(label)+'</small></div>'+(stk?'<div class="tile"><span>Not yet deployed</span><b>'+N(stkT.sto+stkT.alo)+'</b><small>'+N(stkT.sto)+' in storage · '+N(stkT.alo)+' allocated</small></div>':'')+'</div>',h='';
+    '<div class="tile tst"><span>Test Machines</span><b>'+N(c.test||0)+'</b><small>not billable · not in the total</small></div>'+(stk?'<div class="tile"><span>Not yet Deployed</span><b>'+N(stkT.sto+stkT.alo)+'</b><small>'+N(stkT.sto)+' in storage · '+N(stkT.alo)+' allocated</small></div>':'')+'</div>',h='';
   if(!keys.length){h+=tiles+'<div class="dash-empty">No machines found for this selection.</div>'}
   else{
     h+='<div class="dash-grid"><div class="dash-left">'+tiles+'<div class="scroll"><table><tr><th>Machine type</th>'+(hasP?'<th class="n pc" title="All machines of this model on the Inventory sheet">Purchased</th>':'')+'<th class="n">Deployed</th><th class="n">Pullout</th><th class="n'+(stk?' pc':'')+'">Total</th>'+(stk?'<th class="n" title="Machines on the Inventory sheet with status ESI/Storage or Allocated">Not yet deployed</th>':'')+'</tr>';

@@ -102,6 +102,7 @@ body.wide{font-size:14px}
 .tile b{display:block;font-size:26px;line-height:1.2;font-weight:600;font-variant-numeric:tabular-nums}
 .tile small{color:var(--muted);font-size:12px}
 .tile.dep b{color:var(--accent)}
+.tiles.t5{grid-template-columns:repeat(5,minmax(0,1fr))}.tile.tst b{color:var(--muted,#8a94a6)}@media (max-width:760px){.tiles.t5{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .bar{display:inline-block;height:8px;border-radius:4px;background:var(--accent);vertical-align:middle;min-width:2px}
 .bar.pul{background:var(--muted)}
 .dash-empty{color:var(--muted);font-size:13px;padding:6px 0}
@@ -2226,18 +2227,18 @@ function showSheets(fn){
 
 /* ---------- Machine counts dashboard ---------- */
 function combineMc(mc,S){
-  var base=mc['']||{banks:{},btot:{},types:{},dep:0,pul:0,notop:0};
+  var base=mc['']||{banks:{},btot:{},types:{},dep:0,pul:0,notop:0,test:0};
   if(!S.length)return base;
   if(S.length===1)return mc[S[0]]||base;
-  var o={banks:base.banks,btot:base.btot,types:{},dep:0,pul:0,notop:0};
-  S.forEach(function(b){var m=mc[b];if(!m)return;o.dep+=m.dep;o.pul+=m.pul;o.notop+=m.notop;
+  var o={banks:base.banks,btot:base.btot,types:{},dep:0,pul:0,notop:0,test:0};
+  S.forEach(function(b){var m=mc[b];if(!m)return;o.dep+=m.dep;o.pul+=m.pul;o.notop+=m.notop;o.test+=m.test||0;
     Object.keys(m.types).forEach(function(t){var x=o.types[t]||(o.types[t]={dep:0,pul:0});x.dep+=m.types[t].dep;x.pul+=m.types[t].pul})});
   return o;
 }
 function machineCounts(bank,usePer){
   var SB=Array.isArray(bank)?bank:(bank?[bank]:[]),P=usePer&&PER?PER:null;
   if(VIEW)return combineMc(VIEW.mc,SB);
-  var out={banks:{},types:{},btot:{},dep:0,pul:0,notop:0};
+  var out={banks:{},types:{},btot:{},dep:0,pul:0,notop:0,test:0};
   function scan(t,kind){
     if(!t)return;
     var iB=tcol(t,'Bank'),iS=tcol(t,'Machine Status'),iM=tcol(t,'Machine Type');
@@ -2248,15 +2249,17 @@ function machineCounts(bank,usePer){
     if(P&&iDt<0)return;
     for(var r=t.hr+1;r<=t.last;r++){
       if(LA&&LA.indexOf(String(tval(t,r,iB)||'').trim().toUpperCase())<0)continue;
-      var st=String(tval(t,r,iS)||'').trim().toLowerCase(),isDep=kind==='D'&&(st==='operational'||st==='not operational'),isPul=kind==='P'&&st==='pull out';
+      var st=String(tval(t,r,iS)||'').trim().toLowerCase(),isDep=kind==='D'&&(st==='operational'||st==='not operational'),isPul=kind==='P'&&st==='pull out',isTest=kind==='D'&&(st==='test machines'||st==='test machine');
       if(P){ /* movement in the period: deployed by Deployment Date, pulled out by Pull Out Date (any status), serial required */
         var dv=tval(t,r,iDt);if(typeof dv==='string'){var dm=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(dv.trim());dv=dm?new Date(+dm[3]<100?2000+ +dm[3]:+dm[3],+dm[1]-1,+dm[2]):null}
         if(!(dv instanceof Date)||isNaN(dv)||dv.getFullYear()!==P.y||(P.m!==null&&dv.getMonth()!==P.m))continue;
         if(iSn>=0&&!String(tval(t,r,iSn)||'').trim())continue;
         isPul=kind==='P';
       }
-      if(!isDep&&!isPul)continue;
+      if(!isDep&&!isPul&&!isTest)continue;
       var b=String(tval(t,r,iB)||'').trim();if(!b)b='(no bank)';
+      if(isTest){ /* Test Machines are not billable: counted on their own, never in the totals or the machine type table */
+        if(!SB.length||SB.indexOf(b.toUpperCase())>=0)out.test++;continue}
       out.banks[b.toUpperCase()]=1;out.btot[b.toUpperCase()]=(out.btot[b.toUpperCase()]||0)+1;
       if(SB.length&&SB.indexOf(b.toUpperCase())<0)continue;
       var m=String(tval(t,r,iM)||'').trim().toUpperCase()||'(blank)',o=out.types[m]||(out.types[m]={dep:0,pul:0});
@@ -2531,9 +2534,10 @@ function renderDash(){
   var stk=stockInv(),stkT={sto:0,alo:0,tot:0};
   if(stk)Object.keys(stk).forEach(function(m){stkT.sto+=stk[m].sto;stkT.alo+=stk[m].alo;stkT.tot+=stk[m].tot||0});
   var hasP=!!(stk&&stkT.tot>0);
-  var tiles='<div class="tiles"><div class="tile dep"><span>Deployed</span><b>'+N(c.dep)+'</b><small>'+N(c.dep-c.notop)+' operational · '+N(c.notop)+' not operational</small></div>'+
+  var tiles='<div class="tiles'+(true?' t5':'')+'"><div class="tile dep"><span>Total Billable Machines</span><b>'+N(c.dep+c.pul)+'</b><small>'+esc(label)+'</small></div>'+
+    '<div class="tile"><span>Deployed</span><b>'+N(c.dep)+'</b><small>'+N(c.dep-c.notop)+' operational · '+N(c.notop)+' not operational</small></div>'+
     '<div class="tile"><span>Pullout</span><b>'+N(c.pul)+'</b><small>machines pulled out</small></div>'+
-    '<div class="tile"><span>Total machines</span><b>'+N(c.dep+c.pul)+'</b><small>'+esc(label)+'</small></div>'+(stk?'<div class="tile"><span>Not yet deployed</span><b>'+N(stkT.sto+stkT.alo)+'</b><small>'+N(stkT.sto)+' in storage · '+N(stkT.alo)+' allocated</small></div>':'')+'</div>',h='';
+    '<div class="tile tst"><span>Test Machines</span><b>'+N(c.test||0)+'</b><small>not billable · not in the total</small></div>'+(stk?'<div class="tile"><span>Not yet Deployed</span><b>'+N(stkT.sto+stkT.alo)+'</b><small>'+N(stkT.sto)+' in storage · '+N(stkT.alo)+' allocated</small></div>':'')+'</div>',h='';
   if(!keys.length){h+=tiles+'<div class="dash-empty">No machines found for this selection.</div>'}
   else{
     h+='<div class="dash-grid"><div class="dash-left">'+tiles+'<div class="scroll"><table><tr><th>Machine type</th>'+(hasP?'<th class="n pc" title="All machines of this model on the Inventory sheet">Purchased</th>':'')+'<th class="n">Deployed</th><th class="n">Pullout</th><th class="n'+(stk?' pc':'')+'">Total</th>'+(stk?'<th class="n" title="Machines on the Inventory sheet with status ESI/Storage or Allocated">Not yet deployed</th>':'')+'</tr>';
@@ -3143,12 +3147,12 @@ function livePreview(){
   var T={BDO:{KUN505:[40,0],KUN510:[1300,4],KUN520:[430,3]},BPI:{KUN510:[60,0],KUN520:[28,0]},CBC:{KUN510:[70,1],KUN520:[30,0]},MBTC:{KUN505:[120,0],KUN510:[200,2],KUN520:[90,0]},PNB:{KUN505:[26,0],KUN510:[78,1],KUN520:[26,1]},RCBC:{KUN505:[200,0],KUN510:[220,0],KUN520:[60,1]},SBC:{KUN510:[45,0],KUN520:[10,0]}};
   var A={BDO:36e6,BPI:1.8e6,CBC:2.1e6,MBTC:6.6e6,PNB:2.6e6,RCBC:8.4e6,SBC:2.68e6};
   if(window.ESI_ALLOW)Object.keys(T).forEach(function(k){if(window.ESI_ALLOW.indexOf(k)<0){delete T[k];delete A[k]}});
-  var mc={'':{banks:{},btot:{},types:{},dep:0,pul:0,notop:0}};
+  var mc={'':{banks:{},btot:{},types:{},dep:0,pul:0,notop:0,test:0}};
   Object.keys(T).forEach(function(b){
-    var o={banks:{},btot:{},types:{},dep:0,pul:0,notop:0};
+    var o={banks:{},btot:{},types:{},dep:0,pul:0,notop:0,test:0};
     Object.keys(T[b]).forEach(function(t){var d=T[b][t];o.types[t]={dep:d[0],pul:d[1]};o.dep+=d[0];o.pul+=d[1];
       var g=mc[''].types[t]||(mc[''].types[t]={dep:0,pul:0});g.dep+=d[0];g.pul+=d[1]});
-    o.notop=Math.round(o.dep*.05);mc[b]=o;mc[''].dep+=o.dep;mc[''].pul+=o.pul;mc[''].notop+=o.notop;mc[''].banks[b]=1;mc[''].btot[b]=o.dep+o.pul;
+    o.notop=Math.round(o.dep*.05);o.test=(b.length%3)+1;mc[''].test+=o.test;mc[b]=o;mc[''].dep+=o.dep;mc[''].pul+=o.pul;mc[''].notop+=o.notop;mc[''].banks[b]=1;mc[''].btot[b]=o.dep+o.pul;
   });
   var s={};Object.keys(T).forEach(function(b){var k=A[b]/6000;s[b]={cash:Math.round(k),phone:Math.round(k/40),flm:Math.round(k/120),slm:Math.round(k/90),pm:b==='SBC'||b==='PNB'?3:0,
     x:SVC_ITEMS[b].map(function(it,i){return[it[1],Math.round(k/(i+1)/(i%3===2?9e9:1))]})}});
@@ -3162,11 +3166,12 @@ function livePreview(){
   var _mc=machineCounts,TY=['KUN505','KUN510','KUN520','RCD'];
   machineCounts=function(bk,up){ /* preview only: movement counts taken from the sample lists */
     if(!(up&&PER))return _mc(bk,up);
-    var SB=Array.isArray(bk)?bk:(bk?[bk]:[]),o={banks:{},btot:{},types:{},dep:0,pul:0,notop:0};
+    var base0=_mc(bk,0),SB=Array.isArray(bk)?bk:(bk?[bk]:[]),o={banks:{},btot:{},types:{},dep:0,pul:0,notop:0};
     [['D',LD],['P',LP]].forEach(function(a){a[1].forEach(function(r,i){
       if(SB.length&&SB.indexOf(String(r[1]).toUpperCase())<0)return;if(!llPer(a[0],r))return;
       var t=TY[(parseInt(r[2].replace(/\D/g,''),10)||i)%4],x=o.types[t]||(o.types[t]={dep:0,pul:0});
       if(a[0]==='D'){if(r[4]==='Not Operational')o.notop++;x.dep++;o.dep++}else{x.pul++;o.pul++}})});
+    o.test=Math.round((base0.test||0)*o.dep/Math.max(1,base0.dep));
     return o};
   document.body.classList.add('wide');if(window.ESI_ALLOW){LD=LD.filter(function(r){return window.ESI_ALLOW.indexOf(r[1])>=0});LP=LP.filter(function(r){return window.ESI_ALLOW.indexOf(r[1])>=0})}
   var WH=['Bank','Machine S/N','Dispatch Name','Scoping','Ocular Visit','Ocular Report','MSR Completion','Enrollment','For Deployment'],LW=[];for(var w=0;w<12;w++){var bw=names[(w+2)%names.length],dt=function(k){return w>=k*1.5?['','Pending','For Schedule','Waiting for client'][(w+k)%4]:('0'+(k+6)).slice(-2)+'/'+('0'+(w%27+1)).slice(-2)+'/2026'};LW.push([bw,'',cos[w%cos.length]+' - '+['Site Prep','Ocular','MSR Pending'][w%3],dt(1),dt(2),dt(3),dt(4),dt(5),dt(6)])}
