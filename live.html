@@ -218,14 +218,18 @@ body.sumoff #p-dash{display:none}
 #lltbl .llh{min-height:2.5em;margin-bottom:3px;font-size:11.5px}
 .llf{min-height:26px;padding-top:2px;padding-bottom:2px}.llfx{min-height:26px}
 #livelist .scroll{max-height:500px}
-.mrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.9fr);gap:12px;align-items:stretch}.mrow .mt-w{overflow:visible;display:flex}.mrow .mt-w table{width:100%;min-width:0;table-layout:auto;height:100%}@media (max-width:760px){.mrow{grid-template-columns:minmax(0,1fr)}}
+.mrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.9fr);gap:12px;align-items:stretch}.mrow.solo{grid-template-columns:minmax(0,1fr)}.mrow .mt-w{overflow:visible;display:flex}.mrow .mt-w table{width:100%;min-width:0;table-layout:auto;height:100%}@media (max-width:760px){.mrow{grid-template-columns:minmax(0,1fr)}}
 .mrow .mt-w th,.mrow .mt-w td{padding:5px 6px;font-size:12px}.tally th,.tally td{padding:5px 7px;font-size:12px}.mrow .mt-w th{white-space:normal;line-height:1.15;font-size:11.5px}
 .tally{border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0;background:var(--surface)}.tally-h{padding:8px 11px;font-weight:700;font-size:12.5px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
 .tally table{width:100%;border-collapse:collapse;table-layout:fixed}.tally th:first-child,.tally td:first-child{width:25%}.tally th,.tally td{padding:4px 6px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tally th{text-align:left;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}.tally .n{text-align:right;font-variant-numeric:tabular-nums}
 .tally tr.tb{cursor:pointer}.tally tr.tb:hover td{background:var(--accent-soft,rgba(31,79,163,.07))}.tally tr.tb.on td{background:var(--accent-soft,rgba(31,79,163,.12));font-weight:700}.tally tr.tot td{font-weight:700;border-top:1px solid var(--line)}.tally-n{padding:6px 11px;font-size:11.5px;color:var(--muted)}
+.llbtn{margin-left:0!important}.llbtn[aria-pressed=false]{opacity:.65}.tqn{margin:6px 0 4px;padding:7px 10px;border-radius:8px;background:rgba(16,138,76,.12);border:1px solid rgba(16,138,76,.45);color:var(--ink);font-size:12.5px;line-height:1.35}.tqn b{color:#0f8a4b}.tqn:before{content:'✔';color:#0f8a4b;margin-right:6px}
+.tq{stroke:#d92d20;stroke-width:1.4;stroke-dasharray:6 4}.tqt{fill:#d92d20;font-size:9.5px;font-weight:700}.trleg i.q{background:none!important;border-top:2px dashed #d92d20;height:0;border-radius:0;width:14px;align-self:center}
+.wsum{resize:vertical;overflow:auto;min-height:60px;max-height:80vh;padding-bottom:6px}.wsum.off{display:none}.wsum::-webkit-resizer{background:linear-gradient(135deg,transparent 50%,var(--muted,#888) 50%)}
 .wsum{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}.wsum.hide{display:none}
 .wchip{flex:1 1 150px;max-width:230px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 10px;cursor:pointer;font:inherit;color:var(--fg)}
 .wchip:hover{border-color:var(--brand,#1f4fa3)}.wchip.on{border-color:var(--brand,#1f4fa3);box-shadow:0 0 0 1px var(--brand,#1f4fa3) inset;background:var(--accent-soft,rgba(31,79,163,.08))}
+.wchip.wall{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch}
 .wcol{padding:0;display:flex;flex-direction:column;cursor:default}.wcol .wmain{all:unset;box-sizing:border-box;display:block;cursor:pointer;padding:8px 10px 6px}.wcol .wmain b{display:block}
 .wpend{padding:0 10px 8px;display:flex;flex-direction:column;gap:3px}.wpend em{font-style:normal;font-size:11.5px;color:var(--muted)}
 .wcat{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;gap:8px;cursor:pointer;font-size:12px;padding:2px 6px;border-radius:5px;background:rgba(127,127,127,.12)}.wcat:hover,.wcat.on{background:var(--accent-soft,rgba(31,79,163,.16));outline:1px solid var(--brand,#1f4fa3)}.wcat span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcat b{font-size:12px!important;display:inline!important}.wpend small{font-size:11px;color:var(--muted)}
@@ -323,7 +327,7 @@ body.embed .mast{display:none}
   </div>
   <section class="card hide" id="livelist" style="margin-top:16px">
     <div class="card-h"><div><h2>Machine details</h2><p class="h" id="llinfo"></p></div></div>
-    <div class="dl llbar"><div class="seg" role="group" aria-label="List"><button type="button" id="ll-w" aria-pressed="false" title="Deployed_List rows that have no machine serial number yet">WIP <span id="ll-wn"></span></button><button type="button" id="ll-d" aria-pressed="true">Deployed <span id="ll-dn"></span></button><button type="button" id="ll-p" aria-pressed="false">Pullout <span id="ll-pn"></span></button></div><select id="llfz" aria-label="Frozen columns" title="Columns that stay in place when scrolling sideways"><option value="0">Freeze: none</option><option value="1">Freeze: 1 column</option><option value="2">Freeze: 2 columns</option><option value="3">Freeze: 3 columns</option></select><input type="search" id="llq" placeholder="Search machines…" aria-label="Search machines" autocomplete="off"><button type="button" id="llclr" class="hide">Clear filters</button><button type="button" id="llxp" class="llxp" title="Download the rows now shown in this table (all filtered rows, not just the visible ones) as an Excel file">Export</button></div>
+    <div class="dl llbar"><div class="seg" role="group" aria-label="List"><button type="button" id="ll-w" aria-pressed="false" title="Deployed_List rows that have no machine serial number yet">WIP <span id="ll-wn"></span></button><button type="button" id="ll-d" aria-pressed="true">Deployed <span id="ll-dn"></span></button><button type="button" id="ll-p" aria-pressed="false">Pullout <span id="ll-pn"></span></button></div><select id="llfz" aria-label="Frozen columns" title="Columns that stay in place when scrolling sideways"><option value="0">Freeze: none</option><option value="1">Freeze: 1 column</option><option value="2">Freeze: 2 columns</option><option value="3">Freeze: 3 columns</option></select><input type="search" id="llq" placeholder="Search machines…" aria-label="Search machines" autocomplete="off"><button type="button" id="llclr" class="hide">Clear filters</button><button type="button" id="llwtog" class="llxp llbtn hide" aria-pressed="true" title="Show or hide the stage summary">Summary</button><button type="button" id="llxp" class="llxp" title="Download the rows now shown in this table (all filtered rows, not just the visible ones) as an Excel file">Export</button></div>
     <div class="wsum hide" id="llwsum"></div>
     <div class="scroll"><table id="lltbl"></table></div>
     <div class="llpg" id="llpg"></div>
@@ -2425,7 +2429,7 @@ function kpiHtml(selSet){
   if(!pTot)pv=null;
   var R=70,CX=85,CY=85,ang=-Math.PI/2,paths='',leg='',selAmt=0,selN=0,legRows=[];
   items.forEach(function(it,i){
-    var col='var(--c'+(i%8+1)+')',frac=total?it[1]/total:0,pct=(frac*100).toFixed(1)+'%',dim=SS.length&&SS.indexOf(it[0])<0,op=dim?' opacity=".22"':'';
+    var col=BRAND[it[0]]||'var(--c'+(i%8+1)+')',frac=total?it[1]/total:0,pct=(frac*100).toFixed(1)+'%',dim=SS.length&&SS.indexOf(it[0])<0,op=dim?' opacity=".22"':'';
     if(!dim&&SS.length){selAmt+=it[1];selN++}
     var tt='<title>'+esc(it[0])+': '+P(it[1])+' ('+pct+')</title>';
     if(frac>=0.9999)paths+='<circle cx="'+CX+'" cy="'+CY+'" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="28"'+op+'>'+tt+'</circle>';
@@ -2900,6 +2904,7 @@ function llPerBar(){
    +(PER?'<div class="note-s perinfo">Movement in <b>'+(PER.m===null?'':LL_MON[PER.m]+' ')+PER.y+'</b>: Deployed counts machines by Deployment Date, Pullout by Pull Out Date. The Deployed and Pullout lists below follow the same dates. Not yet deployed is the current stock and is not filtered by date.</div>':'');
   box.insertAdjacentHTML('afterbegin',h);
 }
+var LL_QUOTA=60; /* monthly deployment quota */
 function llTrend(){
   var g=$('dbody').querySelector('.dash-grid');if(!g)return;
   var share=g.querySelector(':scope > .kpi');if(!share)return;
@@ -2909,10 +2914,11 @@ function llTrend(){
     if(sel&&sel.indexOf(String(r[1]).toUpperCase())<0)return;
     var m=/^(\d\d)\/\d\d\/(\d{4})$/.exec(r[col]||'');if(!m)return;var k=m[2]+'-'+m[1];o[k]=(o[k]||0)+1;if(k>latest)latest=k})}
   cnt(d.D,5,cD);cnt(d.P,6,cP);
+  var cA={};if(d.D)d.D.rows.forEach(function(r){var m=/^(\d\d)\/\d\d\/(\d{4})$/.exec(r[5]||'');if(m){var k=m[2]+'-'+m[1];cA[k]=(cA[k]||0)+1}}); /* quota = all banks together, whatever the bank filter */
   function keys(endY,endM){var a=[];for(var i=11;i>=0;i--){var y=endY,m=endM-i;while(m<0){m+=12;y--}a.push([y,m,y+'-'+('0'+(m+1)).slice(-2)])}return a}
   var now=new Date(),K=keys(now.getFullYear(),now.getMonth());
   if(!K.some(function(k){return cD[k[2]]||cP[k[2]]})&&latest)K=keys(+latest.slice(0,4),+latest.slice(5)-1);
-  var vD=K.map(function(k){return cD[k[2]]||0}),vP=K.map(function(k){return cP[k[2]]||0}),mx=Math.max.apply(null,vD.concat(vP).concat([1]));
+  var vD=K.map(function(k){return cD[k[2]]||0}),vP=K.map(function(k){return cP[k[2]]||0}),QT=LL_QUOTA,mx=Math.max.apply(null,vD.concat(vP).concat([1,QT]));
   var step=mx<=5?1:mx<=10?2:mx<=25?5:mx<=60?10:mx<=150?25:mx<=300?50:100,top=Math.ceil(mx/step)*step;
   var W=420,H=150,L=30,R=8,T=10,B=22,iw=W-L-R,ih=H-T-B,X=function(i){return L+iw*i/11},Y=function(v){return T+ih-ih*v/top};
   var sv='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Machines deployed and pulled out per month" class="trsvg">';
@@ -2923,11 +2929,16 @@ function llTrend(){
   function line(vals,cls,lab){var pts=vals.map(function(v,i){return X(i)+','+Y(v)}).join(' ');
     var o='<polyline points="'+pts+'" class="tl '+cls+'"/>';
     vals.forEach(function(v,i){o+='<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="3.2" class="td '+cls+'" data-pm="'+K[i][0]+'-'+K[i][1]+'"><title>'+LL_MON[K[i][1]]+' '+K[i][0]+': '+v+' '+lab+' (click to filter)</title></circle>'});return o}
+  sv+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(QT)+'" y2="'+Y(QT)+'" class="tq"><title>Quota: '+QT+' machines per month, all banks together</title></line><text x="'+(W-R-2)+'" y="'+(Y(QT)-3)+'" class="tqt" text-anchor="end">Quota '+QT+'</text>';
   sv+=line(vP,'p','pulled out')+line(vD,'d','deployed')+'</svg>';
   var sD=vD.reduce(function(a,b){return a+b},0),sP=vP.reduce(function(a,b){return a+b},0),N=function(x){return x.toLocaleString('en-US')};
+  var vA=K.map(function(k){return cA[k[2]]||0}),hit=[];vA.forEach(function(v,i){if(v>=QT)hit.push(i)});if(window.ESI_ALLOW)hit=[]; /* a bank-limited user cannot see the consolidated total */
+  var note='';
+  if(hit.length){var li=hit.indexOf(11)>=0,mn=function(i){return LL_MON[K[i][1]].slice(0,3)+' '+K[i][0]},others=hit.filter(function(i){return i!==11});
+    note='<div class="tqn" role="status"><b>'+(li?'Quota reached':'Quota met earlier')+'</b> '+(li?mn(11)+': '+N(vA[11])+' deployed across all banks against a quota of '+QT+(vA[11]>QT?' (+'+N(vA[11]-QT)+')':'')+'.':'All banks, '+mn(11)+' so far: '+N(vA[11])+' of '+QT+' ('+N(QT-vA[11])+' to go).')+(others.length?' '+(li?'Also met in ':'Met in ')+others.map(function(i){return mn(i)+' ('+N(vA[i])+')'}).join(', ')+'.':'')+'</div>'}
   var el=document.createElement('div');el.className='kpi trend';
   el.innerHTML='<h3>Machine movement per month</h3><p>'+LL_MON[K[0][1]].slice(0,3)+' '+K[0][0]+' – '+LL_MON[K[11][1]].slice(0,3)+' '+K[11][0]+' · '+(sel?esc(sel.join(', ')):'all banks')+' · click a month to filter</p>'
-   +'<div class="trleg"><span><i class="d"></i>Deployed <b>'+N(sD)+'</b></span><span><i class="p"></i>Pulled out <b>'+N(sP)+'</b></span></div>'+sv;
+   +'<div class="trleg"><span><i class="d"></i>Deployed <b>'+N(sD)+'</b></span><span><i class="p"></i>Pulled out <b>'+N(sP)+'</b></span><span title="'+(window.ESI_ALLOW?'Quota is for all banks together':vA.filter(function(v){return v>=QT}).length+' of the last 12 months reached the quota (all banks together)')+'"><i class="q"></i>Quota <b>'+QT+'</b>/mo · all banks</span></div>'+note+sv;
   var box=document.createElement('div');box.className='dash-right';g.insertBefore(box,share);box.appendChild(el);box.appendChild(share);
 }
 /* Live compares with the latest month published on the Billing side (before the Live month), not only the calendar month before */
@@ -2974,10 +2985,10 @@ function llExport(){
   llDl(XLSX.write(wb,{type:'array',bookType:'xlsx'}),'ESI_'+nm+bk+'_'+ds+'.xlsx');
 }
 function llTally(){ /* WIP / Deployed / Pullout per bank, shown beside the machine type table */
-  var dl=document.querySelector('#dbody .dash-left');if(!dl)return;var d=LL.cache&&LL.cache.wb?LL.cache:null;
+  var dl=document.querySelector('#dbody .dash-left');if(!dl)return;var d=null;try{d=llData()}catch(e){}
   var row=dl.querySelector('.mrow');
   if(!row){var mt=dl.querySelector(':scope>.scroll');if(!mt)return;row=document.createElement('div');row.className='mrow';mt.parentNode.insertBefore(row,mt);var w=document.createElement('div');w.className='scroll mt-w';w.appendChild(mt);row.appendChild(w);var t=document.createElement('div');t.className='tally';row.appendChild(t)}
-  var T=row.querySelector('.tally');if(!d){T.innerHTML='';T.style.display='none';return}T.style.display='';
+  var T=row.querySelector('.tally');if(!d){T.innerHTML='';T.style.display='none';row.classList.add('solo');return}T.style.display='';row.classList.remove('solo');
   var B={},add=function(rows,k,bi){(rows||[]).forEach(function(r){var bn=String(r[bi]).trim().toUpperCase();if(!bn)return;if(k!=='W'&&PER&&!llPer(k,r))return;(B[bn]=B[bn]||{W:0,D:0,P:0})[k]++})};
   if(d.W)add(d.W.rows,'W',0);if(d.D)add(d.D.rows,'D',1);if(d.P)add(d.P.rows,'P',1);
   var bs=Object.keys(B).sort(),sel=(typeof SELB!=='undefined'&&SELB.length)?SELB:[],tt={W:0,D:0,P:0},N=function(x){return x.toLocaleString('en-US')};
@@ -2987,20 +2998,21 @@ function llTally(){ /* WIP / Deployed / Pullout per bank, shown beside the machi
   T.innerHTML=h;
 }
 function llWSum(d,q0,sel0){ /* WIP milestone summary: dated cells are done; any other cell text is a pending category */
-  var el=$('llwsum');if(!el)return;if(LL.kind!=='W'||!d.W){el.classList.add('hide');return}
+  var el=$('llwsum');if(!el)return;$('llwtog').classList.toggle('hide',LL.kind!=='W'||!d.W);if(LL.kind!=='W'||!d.W){el.classList.add('hide');return}
   var cur=d.W,F=LL.f.W,MS=[];for(var c=3;c<cur.head.length;c++)MS.push(c);
   var isd=function(v){return /^\d\d\/\d\d\/\d{4}$/.test(v)};
   var oth=function(r,skip){for(var k in F){if(!F[k]||!F[k].length||+k===skip)continue;if(F[k].indexOf(r[+k])<0)return false}return true};
   var base=function(r){if(sel0&&sel0.indexOf(String(r[0]).toUpperCase())<0)return false;if(q0&&r.join('\u0001').toLowerCase().indexOf(q0)<0)return false;return true};
   var tot=0;cur.rows.forEach(function(r){if(base(r)&&oth(r,-1))tot++});
-  var actD=function(c){return !!(F[c]&&F[c].length&&F[c].every(isd))},actV=function(c,v){return !!(F[c]&&F[c].length===1&&F[c][0]===v&&!isd(v))},any=MS.some(function(c){return F[c]&&F[c].length});
+  var DV={};MS.forEach(function(c){var s={};cur.rows.forEach(function(r){if(isd(r[c]))s[r[c]]=1});DV[c]=Object.keys(s)});
+  var actD=function(c){return !!(F[c]&&DV[c].length&&DV[c].every(function(v){return F[c].indexOf(v)>=0}))},actV=function(c,v){return !!(F[c]&&F[c].indexOf(v)>=0)},any=MS.some(function(c){return F[c]&&F[c].length});
   var h='<button type="button" class="wchip wall'+(any?'':' on')+'" data-c="*"><b>'+tot.toLocaleString('en-US')+'</b><span>WIP machines</span><i><u style="width:100%"></u></i></button>';
   MS.forEach(function(c){
     var done=0,cat={};cur.rows.forEach(function(r){if(!base(r)||!oth(r,c))return;var v=r[c];if(isd(v))done++;else cat[v]=(cat[v]||0)+1});
     var ks=Object.keys(cat).sort(function(a,b){return cat[b]-cat[a]||(a<b?-1:1)}),pend=0;ks.forEach(function(k){pend+=cat[k]});
-    h+='<div class="wchip wcol'+(actD(c)?' on':'')+'"><button type="button" class="wmain" data-c="'+c+'" title="Show only machines with a date in '+esc(cur.head[c])+'"><b>'+done.toLocaleString('en-US')+'</b><span>'+esc(llTitle(cur.head[c]))+' · done</span><i><u style="width:'+Math.min(100,Math.round(done/(tot||1)*100))+'%"></u></i></button>';
+    h+='<div class="wchip wcol'+(actD(c)?' on':'')+'"><button type="button" class="wmain" data-c="'+c+'" title="Add or remove machines with a date in '+esc(cur.head[c])+' (click several to combine)"><b>'+done.toLocaleString('en-US')+'</b><span>'+esc(llTitle(cur.head[c]))+' · done</span><i><u style="width:'+Math.min(100,Math.round(done/(tot||1)*100))+'%"></u></i></button>';
     h+='<div class="wpend"><em>'+pend.toLocaleString('en-US')+' pending</em>';
-    ks.slice(0,5).forEach(function(k){h+='<button type="button" class="wcat'+(actV(c,k)?' on':'')+'" data-c="'+c+'" data-v="'+esc(k)+'" title="Show only: '+esc(k===''?'(Blank)':k)+'"><span>'+esc(k===''?'(Blank)':k)+'</span><b>'+cat[k].toLocaleString('en-US')+'</b></button>'});
+    ks.slice(0,5).forEach(function(k){h+='<button type="button" class="wcat'+(actV(c,k)?' on':'')+'" data-c="'+c+'" data-v="'+esc(k)+'" title="Click to add or remove: '+esc(k===''?'(Blank)':k)+'"><span>'+esc(k===''?'(Blank)':k)+'</span><b>'+cat[k].toLocaleString('en-US')+'</b></button>'});
     if(ks.length>5){var rest=0;ks.slice(5).forEach(function(k){rest+=cat[k]});h+='<small title="'+esc(ks.slice(5).map(function(k){return(k===''?'(Blank)':k)+' '+cat[k]}).join(', '))+'">+'+(ks.length-5)+' more ('+rest+')</small>'}
     h+='</div></div>'});
   el.innerHTML=h;el.classList.remove('hide');
@@ -3052,11 +3064,18 @@ $('llpg').addEventListener('click',function(e){var id=e.target&&e.target.id;if(i
 $('ll-d').onclick=function(){LL.kind='D';renderList()};$('ll-p').onclick=function(){LL.kind='P';renderList()};$('ll-w').onclick=function(){LL.kind='W';renderList()};
 $('llwsum').addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('button');if(!t||!llData()||!llData().W)return;var W=llData().W,F=LL.f.W,isd=function(v){return /^\d\d\/\d\d\/\d{4}$/.test(v)};
   if(t.classList.contains('wall')){for(var k=3;k<W.head.length;k++)delete F[k]}
-  else if(t.classList.contains('wcat')){var c=+t.getAttribute('data-c'),v=t.getAttribute('data-v');if(F[c]&&F[c].length===1&&F[c][0]===v)delete F[c];else F[c]=[v]}
-  else if(t.classList.contains('wmain')){var c2=+t.getAttribute('data-c');if(F[c2]&&F[c2].length&&F[c2].every(isd))delete F[c2];else{var s={};W.rows.forEach(function(r){if(isd(r[c2]))s[r[c2]]=1});F[c2]=Object.keys(s)}}
+  else if(t.classList.contains('wcat')){var c=+t.getAttribute('data-c'),v=t.getAttribute('data-v'),a=(F[c]||[]).slice(),ix=a.indexOf(v);if(ix>=0)a.splice(ix,1);else a.push(v);if(a.length)F[c]=a;else delete F[c]}
+  else if(t.classList.contains('wmain')){var c2=+t.getAttribute('data-c'),s={};W.rows.forEach(function(r){if(isd(r[c2]))s[r[c2]]=1});var dv=Object.keys(s),a2=(F[c2]||[]).slice(),all=dv.length&&dv.every(function(v){return a2.indexOf(v)>=0});
+    if(all)a2=a2.filter(function(v){return dv.indexOf(v)<0});else dv.forEach(function(v){if(a2.indexOf(v)<0)a2.push(v)});if(a2.length)F[c2]=a2;else delete F[c2]}
   else return;
   LL.hdr=null;renderList()});
 $('llxp').onclick=llExport;
+(function(){var el=$('llwsum'),tg=$('llwtog'),ls=function(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}};
+  var h=ls('esiWsumH');if(h&&+h>0)el.style.height=h+'px';
+  var off=ls('esiWsumOff')==='1';el.classList.toggle('off',off);tg.setAttribute('aria-pressed',off?'false':'true');
+  tg.onclick=function(){off=!off;ls('esiWsumOff',off?'1':'0');el.classList.toggle('off',off);tg.setAttribute('aria-pressed',off?'false':'true')};
+  if(window.ResizeObserver)new ResizeObserver(function(){if(el.style.height&&el.offsetHeight>0)ls('esiWsumH',String(el.offsetHeight))}).observe(el);
+  el.addEventListener('dblclick',function(e){if(e.target===el){el.style.height='';ls('esiWsumH',null)}})})();
 document.addEventListener('click',function(e){var tr=e.target.closest&&e.target.closest('.tally tr.tb');if(!tr)return;var bk=tr.getAttribute('data-b'),i=SELB.indexOf(bk);if(i<0)SELB.push(bk);else SELB.splice(i,1);renderDash()});
 
 (function(){var t=0;$('llq').oninput=function(){clearTimeout(t);var v=this.value;t=setTimeout(function(){LL.q=v;renderList()},150)};

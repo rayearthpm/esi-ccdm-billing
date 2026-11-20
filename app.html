@@ -2311,7 +2311,7 @@ function kpiHtml(selSet){
   if(!pTot)pv=null;
   var R=70,CX=85,CY=85,ang=-Math.PI/2,paths='',leg='',selAmt=0,selN=0,legRows=[];
   items.forEach(function(it,i){
-    var col='var(--c'+(i%8+1)+')',frac=total?it[1]/total:0,pct=(frac*100).toFixed(1)+'%',dim=SS.length&&SS.indexOf(it[0])<0,op=dim?' opacity=".22"':'';
+    var col=BRAND[it[0]]||'var(--c'+(i%8+1)+')',frac=total?it[1]/total:0,pct=(frac*100).toFixed(1)+'%',dim=SS.length&&SS.indexOf(it[0])<0,op=dim?' opacity=".22"':'';
     if(!dim&&SS.length){selAmt+=it[1];selN++}
     var tt='<title>'+esc(it[0])+': '+P(it[1])+' ('+pct+')</title>';
     if(frac>=0.9999)paths+='<circle cx="'+CX+'" cy="'+CY+'" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="28"'+op+'>'+tt+'</circle>';
