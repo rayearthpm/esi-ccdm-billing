@@ -2324,9 +2324,13 @@ function amountOf2(bank,cut,ctx){
   if(typeof gv==='number')return{amt:gv,svc:svcFrom(o)};
   /* the bill's grand total is an error because some machines have no price match (#N/A): total the machines that did price, and say how many were left out */
   if(ix<0||!o.rows)throw new Error('no total found');
-  var sum=0,na=0;o.rows.forEach(function(r){var x=r[ix];if(typeof x==='number')sum+=x;else na++});
+  var sum=0,na=0,bad=[],iT=colIdx(o,/^tid$/i),iN=colIdx(o,/^(client'?s name|branch|site name)$/i),iS=colIdx(o,/serial/i),iC=colIdx(o,/^capacity$/i);
+  function isErr(x){return !!(x&&x.error)||x==='#N/A'}
+  o.rows.forEach(function(r){var x=r[ix];if(typeof x==='number')sum+=x;else{na++;
+    var cols=[];o.headers.forEach(function(h,i){if(isErr(r[i]))cols.push(String(h).replace(/\s+/g,' ').trim())});
+    bad.push({tid:iT>=0?r[iT]:'',name:iN>=0?r[iN]:'',ser:iS>=0?r[iS]:'',cap:iC>=0?r[iC]:'',cols:cols})}});
   if(o._turn)o._turn.forEach(function(t){sum+=t.amt});
-  return{amt:sum,svc:svcFrom(o),na:na};
+  return{amt:sum,svc:svcFrom(o),na:na,bad:bad};
 }
 function svcFrom(o){
   var s={cash:0,phone:0,flm:0,slm:0,pm:0},ch=o.checks||[];
@@ -2381,12 +2385,28 @@ function computeAmounts(){
   if(AMT.key===key&&AMT.data)return;
   AMT={key:key,data:null};renderDash();
   setTimeout(function(){
-    var v={},e={},s={},m={},nn={},cut=cutoffDate();
+    var v={},e={},s={},m={},nn={},bb={},cut=cutoffDate();
     try{s=svcRaw()}catch(err){s={}}
-    Object.keys(BILLS).forEach(function(b){if(!Object.keys(BILLS[b]).length)return;try{var r=amountOf(b,cut);v[b]=r.amt;if(r.miss)m[b]=r.miss;if(r.na)nn[b]=r.na}catch(err){e[b]=err.message}});
-    if(AMT.key===key){AMT.data={v:v,e:e,s:s,m:m,n:nn};renderDash()}
+    Object.keys(BILLS).forEach(function(b){if(!Object.keys(BILLS[b]).length)return;try{var r=amountOf(b,cut);v[b]=r.amt;if(r.miss)m[b]=r.miss;if(r.na){nn[b]=r.na;bb[b]=r.bad||[]}}catch(err){e[b]=err.message}});
+    if(AMT.key===key){AMT.data={v:v,e:e,s:s,m:m,n:nn,b:bb};renderDash()}
   },40);
 }
+var NAOPEN={};
+function naHtml(){
+  var n=AMT.data.n||{},ks=Object.keys(n);if(!ks.length)return '';
+  return ks.map(function(b){
+    var open=!!NAOPEN[b],bad=(AMT.data.b&&AMT.data.b[b])||[];
+    var h='<p class="nabad" data-b="'+esc(b)+'" role="button" tabindex="0" style="margin-top:10px;color:var(--bad);cursor:pointer;font-weight:600">'+(open?'▾':'▸')+' Estimate is short for '+esc(b)+': '+n[b]+' machine'+(n[b]>1?'s':'')+' with no price match (#N/A) – click to '+(open?'hide':'see which')+'</p>';
+    if(open){
+      h+='<div style="max-height:240px;overflow:auto;border:1px solid var(--bad);border-radius:8px;margin-top:6px"><table style="width:100%;font-size:12px;border-collapse:collapse;color:var(--bad)"><tr style="text-align:left"><th style="padding:5px 8px">TID</th><th style="padding:5px 8px">Client</th><th style="padding:5px 8px">Serial</th><th style="padding:5px 8px">Capacity</th><th style="padding:5px 8px">Error in</th></tr>';
+      bad.slice(0,200).forEach(function(x){h+='<tr style="border-top:1px solid var(--line)"><td style="padding:4px 8px">'+esc(x.tid===null||x.tid===undefined?'':x.tid)+'</td><td style="padding:4px 8px">'+esc(x.name===null||x.name===undefined?'':x.name)+'</td><td style="padding:4px 8px">'+esc(x.ser===null||x.ser===undefined?'':x.ser)+'</td><td style="padding:4px 8px">'+esc(x.cap===null||x.cap===undefined||x.cap===''?'(blank)':(x.cap&&x.cap.error?x.cap.error:x.cap))+'</td><td style="padding:4px 8px">'+esc(x.cols.slice(0,3).join(', ')+(x.cols.length>3?' +'+(x.cols.length-3):''))+'</td></tr>'});
+      h+='</table></div>';
+    }
+    return h;
+  }).join('');
+}
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('.nabad');if(!t)return;var b=t.getAttribute('data-b');NAOPEN[b]=!NAOPEN[b];renderDash()});
+document.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('nabad')){e.preventDefault();e.target.click()}});
 function svcItems(b){
   var s=AMT.data.s[b];if(!s)return[];if(s.x)return s.x;
   var o=[['Cash retrieval',s.cash],['Phone support',s.phone],['FLM',s.flm],['SLM',s.slm]];if(s.pm)o.push(['PM',s.pm]);return o;
@@ -2479,7 +2499,7 @@ function kpiHtml(selSet){
   }else if(PREV.key&&PREV.v===false)tl='<div class="trendln"><span>No data for '+esc(PREV.label)+' yet, so no trend arrows.</span></div>';
   var errs=Object.keys(AMT.data.e).map(function(k){return k+' ('+AMT.data.e[k]+')'}),estB=Object.keys(AMT.data.m||{});
   var ksel='<label class="ks">Sort <select id="ksort" aria-label="Sort banks"><option value="amt"'+(KSORT==='amt'?' selected':'')+'>Amount: high to low</option><option value="amt_asc"'+(KSORT==='amt_asc'?' selected':'')+'>Amount: low to high</option><option value="name"'+(KSORT==='name'?' selected':'')+'>Bank: A to Z</option>'+(pv?'<option value="gain"'+(KSORT==='gain'?' selected':'')+'>Change: biggest gain</option><option value="loss"'+(KSORT==='loss'?' selected':'')+'>Change: biggest loss</option>':'')+'</select></label>';
-  return head+'<p>'+mlabel+(selBank?' · '+esc(selBank)+' highlighted':' · all banks')+'</p><div class="kbar">'+tl+ksel+'</div>'+'<div class="pie"><svg viewBox="0 0 170 170" role="img" aria-label="Share of projected billed amount">'+paths+'<text class="ctr" x="85" y="88" text-anchor="middle" style="font-size:'+(big.length>9?15:21)+'px">'+esc(big)+'</text><text class="cap" x="85" y="106" text-anchor="middle">'+esc(cap)+'</text></svg><ul class="leg">'+leg+'</ul></div>'+(estB.length?'<p style="margin-top:10px;color:var(--muted);font-size:12.5px">Estimate for '+esc(estB.join(', '))+': cash retrieval is left out until the helper sheets ('+esc(estB.map(function(b){return AMT.data.m[b].join(', ')}).join('; '))+') are added to the file.</p>':'')+(Object.keys(AMT.data.n||{}).length?'<p style="margin-top:10px">Estimate is short for '+esc(Object.keys(AMT.data.n).map(function(b){return b+' ('+AMT.data.n[b]+' machine'+(AMT.data.n[b]>1?'s':'')+' with no price match, #N/A)'}).join('; '))+'.</p>':'')+(errs.length?'<p style="margin-top:10px;color:var(--bad)">Not included: '+esc(errs.join('; '))+'</p>':'')+'</div>';
+  return head+'<p>'+mlabel+(selBank?' · '+esc(selBank)+' highlighted':' · all banks')+'</p><div class="kbar">'+tl+ksel+'</div>'+'<div class="pie"><svg viewBox="0 0 170 170" role="img" aria-label="Share of projected billed amount">'+paths+'<text class="ctr" x="85" y="88" text-anchor="middle" style="font-size:'+(big.length>9?15:21)+'px">'+esc(big)+'</text><text class="cap" x="85" y="106" text-anchor="middle">'+esc(cap)+'</text></svg><ul class="leg">'+leg+'</ul></div>'+(estB.length?'<p style="margin-top:10px;color:var(--muted);font-size:12.5px">Estimate for '+esc(estB.join(', '))+': cash retrieval is left out until the helper sheets ('+esc(estB.map(function(b){return AMT.data.m[b].join(', ')}).join('; '))+') are added to the file.</p>':'')+naHtml()+(errs.length?'<p style="margin-top:10px;color:var(--bad)">Not included: '+esc(errs.join('; '))+'</p>':'')+'</div>';
 }
 var SELB=[];
 var KSORT='amt'; /* order of the banks in the share card legend */
