@@ -55,6 +55,7 @@ th{position:sticky;top:0;z-index:2;background:var(--head);color:var(--muted);fon
 tr:nth-child(even) td{background:var(--zebra)}
 tbody tr:hover td,table tr:hover td{background:var(--accent-soft)}
 td.n{text-align:right;font-variant-numeric:tabular-nums}
+th.pc,td.pc{border-right:2px solid var(--line-strong,var(--muted,#9aa5b8));padding-right:12px!important}th.pc+th,td.pc+td{padding-left:12px!important}
 .tot td{font-weight:700;background:var(--tot)!important;border-bottom:1px solid var(--line)}
 .ok{color:var(--ok)}.bad{color:var(--bad)}
 #msg{color:var(--bad);margin-top:10px;font-size:13px}
@@ -222,7 +223,7 @@ body.sumoff #p-dash{display:none}
 #dbody .mrow .mt-w th,#dbody .mrow .mt-w td{padding:6px 4px!important;font-size:11.5px}.tally th,.tally td{padding:5px 5px;font-size:11.5px}.mrow .mt-w th{white-space:normal;line-height:1.15;font-size:11.5px}
 .tally{border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0;background:var(--surface)}.tally-h{padding:8px 11px;font-weight:700;font-size:12.5px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
 .tally table{width:100%;border-collapse:collapse;table-layout:fixed}.tally th:first-child,.tally td:first-child{width:22%}.tally th{overflow:visible!important;text-overflow:clip!important;padding-left:2px!important;padding-right:6px!important;font-size:10.5px!important;letter-spacing:0}.tally th,.tally td{padding:4px 5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tally th{text-align:left;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}.tally .n{text-align:right;font-variant-numeric:tabular-nums}
-.tally tr.tb{cursor:pointer}.tally tr.tb:hover td{background:var(--accent-soft,rgba(31,79,163,.07))}.tally tr.tb.on td{background:var(--accent-soft,rgba(31,79,163,.12));font-weight:700}.tally tr.tot td{font-weight:700;border-top:1px solid var(--line)}.tally-n{padding:6px 11px;font-size:11.5px;color:var(--muted)}
+.tally tr.tb{cursor:pointer}.tally tr.tb:hover td{background:var(--accent-soft,rgba(31,79,163,.07))}.tally tr.tb.on td{background:var(--accent-soft,rgba(31,79,163,.18));font-weight:700;color:var(--ink)}.tally tr.tb.on td:first-child{box-shadow:inset 4px 0 0 var(--brand,#1f4fa3)}.tally.filtering{border-color:var(--brand,#1f4fa3);box-shadow:0 0 0 1px var(--brand,#1f4fa3)}.tally.filtering tr.tb:not(.on) td{opacity:.35;filter:grayscale(1)}.tally tr.tb td{transition:opacity .15s}.tally tr.tot td{font-weight:700;border-top:1px solid var(--line)}.tally-n{padding:6px 11px;font-size:11.5px;color:var(--muted)}
 .llbtn{margin-left:0!important}.llbtn[aria-pressed=false]{opacity:.65}.tqn{margin:6px 0 4px;padding:7px 10px;border-radius:8px;background:rgba(16,138,76,.12);border:1px solid rgba(16,138,76,.45);color:var(--ink);font-size:12.5px;line-height:1.35}.tqn b{color:#0f8a4b}.tqn:before{content:'✔';color:#0f8a4b;margin-right:6px}
 .tq{stroke:#d92d20;stroke-width:1.4;stroke-dasharray:6 4}.tqt{fill:#d92d20;font-size:9.5px;font-weight:700}.trleg i.q{background:none!important;border-top:2px dashed #d92d20;height:0;border-radius:0;width:14px;align-self:center}
 .wsum{resize:vertical;overflow:auto;min-height:60px;max-height:80vh;padding-bottom:6px}.wsum.off{display:none}.wsum::-webkit-resizer{background:linear-gradient(135deg,transparent 50%,var(--muted,#888) 50%)}
@@ -2535,11 +2536,11 @@ function renderDash(){
     '<div class="tile"><span>Total machines</span><b>'+N(c.dep+c.pul)+'</b><small>'+esc(label)+'</small></div>'+(stk?'<div class="tile"><span>Not yet deployed</span><b>'+N(stkT.sto+stkT.alo)+'</b><small>'+N(stkT.sto)+' in storage · '+N(stkT.alo)+' allocated</small></div>':'')+'</div>',h='';
   if(!keys.length){h+=tiles+'<div class="dash-empty">No machines found for this selection.</div>'}
   else{
-    h+='<div class="dash-grid"><div class="dash-left">'+tiles+'<div class="scroll"><table><tr><th>Machine type</th>'+(hasP?'<th class="n" title="All machines of this model on the Inventory sheet">Purchased</th>':'')+'<th class="n">Deployed</th><th class="n">Pullout</th><th class="n">Total</th>'+(stk?'<th class="n" title="Machines on the Inventory sheet with status ESI/Storage or Allocated">Not yet deployed</th>':'')+'</tr>';
+    h+='<div class="dash-grid"><div class="dash-left">'+tiles+'<div class="scroll"><table><tr><th>Machine type</th>'+(hasP?'<th class="n pc" title="All machines of this model on the Inventory sheet">Purchased</th>':'')+'<th class="n">Deployed</th><th class="n">Pullout</th><th class="n'+(stk?' pc':'')+'">Total</th>'+(stk?'<th class="n" title="Machines on the Inventory sheet with status ESI/Storage or Allocated">Not yet deployed</th>':'')+'</tr>';
     var rowKeys=keys.slice();if(stk)Object.keys(stk).forEach(function(m){if(rowKeys.indexOf(m)<0)rowKeys.push(m)});rowKeys.sort();
     rowKeys.forEach(function(k){var o=c.types[k]||{dep:0,pul:0},sx=stk&&stk[k],sv=sx?sx.sto+sx.alo:0;
-      h+='<tr><td>'+esc(k)+'</td>'+(hasP?'<td class="n">'+(sx&&sx.tot?N(sx.tot):'<span class="dash">–</span>')+'</td>':'')+'<td class="n">'+N(o.dep)+'</td><td class="n">'+N(o.pul)+'</td><td class="n"><b>'+N(o.dep+o.pul)+'</b></td>'+(stk?'<td class="n" title="'+(sx?N(sx.sto)+' in storage · '+N(sx.alo)+' allocated':'')+'">'+(sv?N(sv):'<span class="dash">–</span>')+'</td>':'')+'</tr>'});
-    h+='<tr class="tot"><td>Total</td>'+(hasP?'<td class="n">'+N(stkT.tot)+'</td>':'')+'<td class="n">'+N(c.dep)+'</td><td class="n">'+N(c.pul)+'</td><td class="n">'+N(c.dep+c.pul)+'</td>'+(stk?'<td class="n">'+N(stkT.sto+stkT.alo)+'</td>':'')+'</tr></table></div>'+(stk&&SELB.length?'<div class="note-s" style="margin-top:-6px">Machines not yet deployed are not assigned to a bank, so that column and tile always show all banks.</div>':'')+svcHtml(SELB)+'</div>';
+      h+='<tr><td>'+esc(k)+'</td>'+(hasP?'<td class="n pc">'+(sx&&sx.tot?N(sx.tot):'<span class="dash">–</span>')+'</td>':'')+'<td class="n">'+N(o.dep)+'</td><td class="n">'+N(o.pul)+'</td><td class="n'+(stk?' pc':'')+'"><b>'+N(o.dep+o.pul)+'</b></td>'+(stk?'<td class="n" title="'+(sx?N(sx.sto)+' in storage · '+N(sx.alo)+' allocated':'')+'">'+(sv?N(sv):'<span class="dash">–</span>')+'</td>':'')+'</tr>'});
+    h+='<tr class="tot"><td>Total</td>'+(hasP?'<td class="n pc">'+N(stkT.tot)+'</td>':'')+'<td class="n">'+N(c.dep)+'</td><td class="n">'+N(c.pul)+'</td><td class="n'+(stk?' pc':'')+'">'+N(c.dep+c.pul)+'</td>'+(stk?'<td class="n">'+N(stkT.sto+stkT.alo)+'</td>':'')+'</tr></table></div>'+(stk&&SELB.length?'<div class="note-s" style="margin-top:-6px">Machines not yet deployed are not assigned to a bank, so that column and tile always show all banks.</div>':'')+svcHtml(SELB)+'</div>';
     h+=kpiHtml(SELB)+'</div>';
   }
   $('dbody').innerHTML=h;
@@ -3001,7 +3002,7 @@ function llTally(){ /* WIP / Deployed / Pullout per bank, shown beside the machi
   var h='<div class="tally-h">Operational Progress</div><table><tr><th>Bank</th><th class="n" title="Deployed_List rows without a machine serial yet">WIP</th><th class="n">Deployed</th><th class="n">Pullout</th></tr>';
   bs.forEach(function(k){var o=B[k];tt.W+=o.W;tt.D+=o.D;tt.P+=o.P;h+='<tr data-b="'+esc(k)+'" class="tb'+(sel.indexOf(k)>=0?' on':'')+'"><td>'+esc(k)+'</td><td class="n">'+N(o.W)+'</td><td class="n">'+N(o.D)+'</td><td class="n">'+N(o.P)+'</td></tr>'});
   h+='<tr class="tot"><td>Total</td><td class="n">'+N(tt.W)+'</td><td class="n">'+N(tt.D)+'</td><td class="n">'+N(tt.P)+'</td></tr></table>'+(PER?'<div class="tally-n">Deployed and Pullout follow the period filter. WIP has no movement date yet.</div>':'');
-  T.innerHTML=h;llEq();
+  T.className='tally'+(sel.length?' filtering':'');T.innerHTML=h;llEq();
 }
 function llEq(){ /* Machine type card = same height as Operational Progress: header and Total stay natural, the model rows share the extra */
   var row=document.querySelector('#dbody .mrow');if(!row)return;var T=row.querySelector('.tally'),tb=row.querySelector('.mt-w table');if(!T||!tb||T.style.display==='none')return;
