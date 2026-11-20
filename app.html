@@ -2160,9 +2160,14 @@ function stockInv(){
         rows.forEach(function(r){
           var m=String(r['Model']||'').trim().toUpperCase(),sn=String(r['System S/N']||'').trim(),st=String(r['Status']||'').trim().toLowerCase();
           var k=st==='esi/storage'?'sto':st==='allocated'?'alo':'';
-          if(!m||!sn||!k)return;
-          var x=o[m]||(o[m]={sto:0,alo:0});x[k]++;n++;
+          if(!m)return;
+          var x=o[m]||(o[m]={sto:0,alo:0,tot:0});x.tot++;n++;if(sn&&k)x[k]++;
         });
+        /* The sheet's own summary block at the top (model name, then its count to the right) is what people see in Excel: use it when present */
+        try{var iw=WB.Sheets.Inventory||WB.Sheets[WB.SheetNames.filter(function(z){return z.toLowerCase()==='inventory'})[0]];
+          if(iw)for(var ri=0;ri<8;ri++)for(var ci=0;ci<12;ci++){var cl=iw[XLSX.utils.encode_cell({r:ri,c:ci})];
+            if(cl&&typeof cl.v==='string'){var mk=cl.v.trim().toUpperCase();if(o[mk]){var nx=iw[XLSX.utils.encode_cell({r:ri,c:ci+1})];if(nx&&typeof nx.v==='number'&&nx.v>0)o[mk].tot=nx.v}}}
+        }catch(e){}
         STK.v=n?o:null}
     }catch(e){STK.v=null}
   }
@@ -2404,18 +2409,19 @@ function renderDash(){
   renderRail();
   var c=machineCounts(SELB,1),keys=Object.keys(c.types).sort(),label=SELB.length?SELB.join(', '):'all banks';
   var N=function(x){return x.toLocaleString()};
-  var stk=stockInv(),stkT={sto:0,alo:0};
-  if(stk)Object.keys(stk).forEach(function(m){stkT.sto+=stk[m].sto;stkT.alo+=stk[m].alo});
+  var stk=stockInv(),stkT={sto:0,alo:0,tot:0};
+  if(stk)Object.keys(stk).forEach(function(m){stkT.sto+=stk[m].sto;stkT.alo+=stk[m].alo;stkT.tot+=stk[m].tot||0});
+  var hasP=!!(stk&&stkT.tot>0);
   var tiles='<div class="tiles"><div class="tile dep"><span>Deployed</span><b>'+N(c.dep)+'</b><small>'+N(c.dep-c.notop)+' operational · '+N(c.notop)+' not operational</small></div>'+
     '<div class="tile"><span>Pullout</span><b>'+N(c.pul)+'</b><small>machines pulled out</small></div>'+
     '<div class="tile"><span>Total machines</span><b>'+N(c.dep+c.pul)+'</b><small>'+esc(label)+'</small></div>'+(stk?'<div class="tile"><span>Not yet deployed</span><b>'+N(stkT.sto+stkT.alo)+'</b><small>'+N(stkT.sto)+' in storage · '+N(stkT.alo)+' allocated</small></div>':'')+'</div>',h='';
   if(!keys.length){h+=tiles+'<div class="dash-empty">No machines found for this selection.</div>'}
   else{
-    h+='<div class="dash-grid"><div class="dash-left">'+tiles+'<div class="scroll"><table><tr><th>Machine type</th><th class="n">Deployed</th><th class="n">Pullout</th><th class="n">Total</th>'+(stk?'<th class="n" title="Machines on the Inventory sheet with status ESI/Storage or Allocated">Not yet deployed</th>':'')+'</tr>';
+    h+='<div class="dash-grid"><div class="dash-left">'+tiles+'<div class="scroll"><table><tr><th>Machine type</th>'+(hasP?'<th class="n" title="All machines of this model on the Inventory sheet">Purchased</th>':'')+'<th class="n">Deployed</th><th class="n">Pullout</th><th class="n">Total</th>'+(stk?'<th class="n" title="Machines on the Inventory sheet with status ESI/Storage or Allocated">Not yet deployed</th>':'')+'</tr>';
     var rowKeys=keys.slice();if(stk)Object.keys(stk).forEach(function(m){if(rowKeys.indexOf(m)<0)rowKeys.push(m)});rowKeys.sort();
     rowKeys.forEach(function(k){var o=c.types[k]||{dep:0,pul:0},sx=stk&&stk[k],sv=sx?sx.sto+sx.alo:0;
-      h+='<tr><td>'+esc(k)+'</td><td class="n">'+N(o.dep)+'</td><td class="n">'+N(o.pul)+'</td><td class="n"><b>'+N(o.dep+o.pul)+'</b></td>'+(stk?'<td class="n" title="'+(sx?N(sx.sto)+' in storage · '+N(sx.alo)+' allocated':'')+'">'+(sv?N(sv):'<span class="dash">–</span>')+'</td>':'')+'</tr>'});
-    h+='<tr class="tot"><td>Total</td><td class="n">'+N(c.dep)+'</td><td class="n">'+N(c.pul)+'</td><td class="n">'+N(c.dep+c.pul)+'</td>'+(stk?'<td class="n">'+N(stkT.sto+stkT.alo)+'</td>':'')+'</tr></table></div>'+(stk&&SELB.length?'<div class="note-s" style="margin-top:-6px">Machines not yet deployed are not assigned to a bank, so that column and tile always show all banks.</div>':'')+svcHtml(SELB)+'</div>';
+      h+='<tr><td>'+esc(k)+'</td>'+(hasP?'<td class="n">'+(sx&&sx.tot?N(sx.tot):'<span class="dash">–</span>')+'</td>':'')+'<td class="n">'+N(o.dep)+'</td><td class="n">'+N(o.pul)+'</td><td class="n"><b>'+N(o.dep+o.pul)+'</b></td>'+(stk?'<td class="n" title="'+(sx?N(sx.sto)+' in storage · '+N(sx.alo)+' allocated':'')+'">'+(sv?N(sv):'<span class="dash">–</span>')+'</td>':'')+'</tr>'});
+    h+='<tr class="tot"><td>Total</td>'+(hasP?'<td class="n">'+N(stkT.tot)+'</td>':'')+'<td class="n">'+N(c.dep)+'</td><td class="n">'+N(c.pul)+'</td><td class="n">'+N(c.dep+c.pul)+'</td>'+(stk?'<td class="n">'+N(stkT.sto+stkT.alo)+'</td>':'')+'</tr></table></div>'+(stk&&SELB.length?'<div class="note-s" style="margin-top:-6px">Machines not yet deployed are not assigned to a bank, so that column and tile always show all banks.</div>':'')+svcHtml(SELB)+'</div>';
     h+=kpiHtml(SELB)+'</div>';
   }
   $('dbody').innerHTML=h;
