@@ -44,7 +44,7 @@
         var rb=document.createElement('button');rb.textContent='Refresh list';
         bar.insertBefore(sel,pub);bar.insertBefore(rb,pub);bar.insertBefore(msg,pub);
         function label(f){return f.month?new Date(f.month+'-01T00:00:00Z').toLocaleDateString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}):f.name}
-        function openFile(f){if(!f||busy||f.name===loaded)return;sel.value=f.id;return fetchFile('/api/source/file?id='+encodeURIComponent(f.id))}
+        function openFile(f){if(!f||busy||f.name===loaded)return;sel.value=f.id;var c0=document.getElementById('cutoff');return Promise.resolve(fetchFile('/api/source/file?id='+encodeURIComponent(f.id))).then(function(){setTimeout(function(){if(c0&&f.month&&!c0.value){c0.value=f.month;c0.dispatchEvent(new Event('change'))}},800)})}
         function conn(){var a=document.createElement('a');a.href='/auth/login';a.target='_blank';a.className='p';a.textContent='Connect OneDrive';a.style.cssText='background:var(--accent);color:#fff;padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600';return a}
         function list(force){status('Looking in the OneDrive folder…');
           return fetch('/api/source/list'+(force?'?force=1':'')).then(function(r){return r.json().then(function(j){if(!r.ok){var e=new Error(j.error||'failed');e.connect=j.connect;throw e}return j})}).then(function(fs){
@@ -56,6 +56,7 @@
         rb.onclick=function(){list(true)};
         // choosing another billing month in the generator switches to that month's file
         var cut=document.getElementById('cutoff');
+        var cl=cut&&cut.closest('label');if(cl)cl.style.display='none'; // the month is chosen on this Database bar
         if(cut)cut.addEventListener('change',function(){var f=files.filter(function(x){return x.month===cut.value})[0];
           if(f&&f.name!==loaded)openFile(f);else if(!f&&cut.value&&files.length)status('No file for that month in the OneDrive folder.')});
         list(false).then(function(fs){if(fs&&fs.length)openFile(fs[0])});

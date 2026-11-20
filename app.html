@@ -2491,7 +2491,7 @@ function fillType(){
 function consEnter(){
   var lab=$('type').closest('label');if(lab)lab.classList.toggle('hide',CONSMODE);
   $('s2').querySelector('h2').textContent=CONSMODE?'Consolidated Billing':'Generate Billing';
-  $('s2').querySelector('.h').textContent=CONSMODE?'Every bank, machine by machine, in one sheet. Pick the billing month, then download.':'Pick the bank, the bill type and the billing month. The bill is generated automatically.';
+  $('s2').querySelector('.h').textContent=CONSMODE?(window.ESI_SERVER?'Every bank, machine by machine, in one sheet. The month is the one chosen on the Database bar.':'Every bank, machine by machine, in one sheet. Pick the billing month, then download.'):(window.ESI_SERVER?'Pick the bank and the bill type. The bill is generated automatically for the month chosen on the Database bar.':'Pick the bank, the bill type and the billing month. The bill is generated automatically.');
   if(CONSMODE){$('reqs').innerHTML='';consGenerate()}
 }
 function checkReqs(){
