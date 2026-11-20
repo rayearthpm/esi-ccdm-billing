@@ -3324,7 +3324,7 @@ function consGenerate(){
         var wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('CCDM_Consolidated_Billing');
         var L=function(i){var s='';i++;while(i>0){var m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26)}return s};
         var NAVY='FF0B3040',ACC='_(* #,##0.00_);_(* -#,##0.00_);_(* "-"??_);_(@_)',CNT='0;-0;"-";@',thin={style:'thin'},BD={top:thin,bottom:thin,left:thin,right:thin};
-        ws.getRow(2).values=[null].concat(CONS_HEAD);
+        CONS_HEAD.forEach(function(h,i){ws.getCell(2,i+1).value=h});
         var hr=ws.getRow(2);hr.height=51;hr.font={bold:true};hr.alignment={horizontal:'center',vertical:'bottom',wrapText:true};
         var SUMC=CONS_AMT.map(L),CNTC=[18,20,22,24,26,28,30,32];
         c.rows.forEach(function(r,i){
