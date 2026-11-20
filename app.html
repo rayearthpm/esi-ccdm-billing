@@ -2129,7 +2129,8 @@ function machineCounts(bank,usePer){
     for(var r=t.hr+1;r<=t.last;r++){
       var st=String(tval(t,r,iS)||'').trim().toLowerCase(),isDep=kind==='D'&&(st==='operational'||st==='not operational'),isPul=kind==='P'&&st==='pull out';
       if(P){ /* movement in the period: deployed by Deployment Date, pulled out by Pull Out Date (any status), serial required */
-        var dv=tval(t,r,iDt);if(!(dv instanceof Date)||isNaN(dv)||dv.getFullYear()!==P.y||(P.m!==null&&dv.getMonth()!==P.m))continue;
+        var dv=tval(t,r,iDt);if(typeof dv==='string'){var dm=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(dv.trim());dv=dm?new Date(+dm[3]<100?2000+ +dm[3]:+dm[3],+dm[1]-1,+dm[2]):null}
+        if(!(dv instanceof Date)||isNaN(dv)||dv.getFullYear()!==P.y||(P.m!==null&&dv.getMonth()!==P.m))continue;
         if(iSn>=0&&!String(tval(t,r,iSn)||'').trim())continue;
         isPul=kind==='P';
       }

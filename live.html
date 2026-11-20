@@ -2228,7 +2228,8 @@ function machineCounts(bank,usePer){
     for(var r=t.hr+1;r<=t.last;r++){
       var st=String(tval(t,r,iS)||'').trim().toLowerCase(),isDep=kind==='D'&&(st==='operational'||st==='not operational'),isPul=kind==='P'&&st==='pull out';
       if(P){ /* movement in the period: deployed by Deployment Date, pulled out by Pull Out Date (any status), serial required */
-        var dv=tval(t,r,iDt);if(!(dv instanceof Date)||isNaN(dv)||dv.getFullYear()!==P.y||(P.m!==null&&dv.getMonth()!==P.m))continue;
+        var dv=tval(t,r,iDt);if(typeof dv==='string'){var dm=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(dv.trim());dv=dm?new Date(+dm[3]<100?2000+ +dm[3]:+dm[3],+dm[1]-1,+dm[2]):null}
+        if(!(dv instanceof Date)||isNaN(dv)||dv.getFullYear()!==P.y||(P.m!==null&&dv.getMonth()!==P.m))continue;
         if(iSn>=0&&!String(tval(t,r,iSn)||'').trim())continue;
         isPul=kind==='P';
       }
@@ -2739,11 +2740,23 @@ $('pubBtn').onclick=publishAll;
 var LL={page:0,pk:'',kind:'D',cache:{wb:null,D:null,P:null},q:'',f:{D:{},P:{}},hdr:null};
 var LL_COLS=[0,1,2,3,4,13,15,22,23,43,44]; /* A-E, N, P, W, X, AR, AS */
 function llMDY(d){return ('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2)+'/'+d.getFullYear()}
+var LL_M3={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function llNorm(v){ /* text that is clearly a date is shown as mm/dd/yyyy (US order: month first) */
+  var t=String(v).trim(),m,y,mo,d;
+  if(/^\d\d\/\d\d\/\d{4}$/.test(t))return t;
+  if(m=/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ].*)?$/.exec(t)){y=+m[1];mo=+m[2];d=+m[3]}
+  else if(m=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(t)){mo=+m[1];d=+m[2];y=+m[3];if(y<100)y+=y<70?2000:1900}
+  else if(m=/^(\d{1,2})[\- ]([A-Za-z]{3})[a-z]*[\- ,]+(\d{2}|\d{4})$/.exec(t)){d=+m[1];mo=LL_M3[m[2].toLowerCase()];y=+m[3];if(y<100)y+=y<70?2000:1900}
+  else if(m=/^([A-Za-z]{3})[a-z]*\.? (\d{1,2}),? (\d{4})$/.exec(t)){mo=LL_M3[m[1].toLowerCase()];d=+m[2];y=+m[3]}
+  else return v;
+  if(!mo||mo>12||d<1||d>31)return v;
+  return('0'+mo).slice(-2)+'/'+('0'+d).slice(-2)+'/'+y;
+}
 function llVal(x){ /* dates always show as mm/dd/yyyy */
   if(!x||x.v===undefined||x.v===null)return'';
   if(x.v instanceof Date)return isNaN(x.v)?'':llMDY(x.v);
   if(x.t==='n'&&x.z&&/[dmy]/i.test(String(x.z).replace(/\[[^\]]*\]|"[^"]*"|\\./g,''))&&!/^[#0.,%\s]*$/.test(x.z)){var p=XLSX.SSF&&XLSX.SSF.parse_date_code?XLSX.SSF.parse_date_code(x.v):null;if(p&&p.y>1900)return ('0'+p.m).slice(-2)+'/'+('0'+p.d).slice(-2)+'/'+p.y}
-  return String(x.w!==undefined?x.w:x.v);
+  return llNorm(String(x.w!==undefined?x.w:x.v));
 }
 function llBuild(t){
   var ws=t.ws,cell=function(r,c){return ws[XLSX.utils.encode_cell({r:r,c:c})]};
@@ -2812,12 +2825,14 @@ function llPopList(){
   p.querySelector('.llpb .p').disabled=!LLP.vals.some(function(x){return LLP.sel[x[0]]});
   LLP.vis=vis;
 }
+var LL_ISD=/^\d\d\/\d\d\/\d{4}$/;
 var LL_MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function llPopTree(p){
   var q=p.querySelector('input[type=search]').value.trim().toLowerCase(),vis=LLP.vals.filter(function(x){
     if(!q)return true;if(x[0]==='')return '(blank)'.indexOf(q)>=0;
-    var mo=LL_MON[+x[0].slice(0,2)-1].toLowerCase();return x[0].indexOf(q)>=0||mo.indexOf(q)>=0||x[0].slice(6).indexOf(q)>=0}),T={},blank=null;
-  vis.forEach(function(x){if(x[0]===''){blank=x;return}var y=x[0].slice(6),m=x[0].slice(0,2);(T[y]=T[y]||{})[m]=(T[y][m]||[]);T[y][m].push(x)});
+    if(!LL_ISD.test(x[0]))return x[0].toLowerCase().indexOf(q)>=0;
+    var mo=LL_MON[+x[0].slice(0,2)-1].toLowerCase();return x[0].indexOf(q)>=0||mo.indexOf(q)>=0||x[0].slice(6).indexOf(q)>=0}),T={},blank=null,others=[];
+  vis.forEach(function(x){if(x[0]===''){blank=x;return}if(!LL_ISD.test(x[0])){others.push(x);return}var y=x[0].slice(6),m=x[0].slice(0,2);(T[y]=T[y]||{})[m]=(T[y][m]||[]);T[y][m].push(x)});
   var h='',st=function(arr){var n=0,t=arr.length;arr.forEach(function(x){if(LLP.sel[x[0]])n++});return n===t?'all':n?'some':'none'};
   var sum=function(arr){return arr.reduce(function(a,x){return a+x[1]},0)};
   Object.keys(T).sort().forEach(function(y){
@@ -2830,6 +2845,7 @@ function llPopTree(p){
       if(mo)ml.forEach(function(x){h+='<div class="llt l3"><label><input type="checkbox" data-v="'+esc(x[0])+'"'+(LLP.sel[x[0]]?' checked':'')+'><span>'+x[0].slice(3,5)+'</span><em>'+x[1]+'</em></label></div>'});
     });
   });
+  others.forEach(function(x){h+='<div class="llt"><label><input type="checkbox" data-v="'+esc(x[0])+'"'+(LLP.sel[x[0]]?' checked':'')+'><span>'+esc(x[0])+'</span><em>'+x[1]+'</em></label></div>'});
   if(blank)h+='<div class="llt"><label><input type="checkbox" data-v=""'+(LLP.sel['']?' checked':'')+'><span>(Blank)</span><em>'+blank[1]+'</em></label></div>';
   if(!vis.length)h='<div class="llnote">No matches.</div>';
   var l=p.querySelector('.llpl');l.innerHTML=h;
@@ -2840,7 +2856,7 @@ function llPopTree(p){
 }
 function llPopOpen(btn,cur){
   llPopClose();var c=+btn.getAttribute('data-c'),F=llSelOf(c),FU=c===1&&F?F.map(function(v){return String(v).toUpperCase()}):null;
-  LLP.c=c;LLP.vals=llVals(cur,c);LLP.open={};LLP.isDate=LLP.vals.some(function(x){return x[0]!==''})&&LLP.vals.every(function(x){return x[0]===''||/^\d\d\/\d\d\/\d{4}$/.test(x[0])});LLP.sel={};LLP.vals.forEach(function(x){LLP.sel[x[0]]=!F||!F.length||(FU?FU.indexOf(String(x[0]).toUpperCase())>=0:F.indexOf(x[0])>=0)});
+  LLP.c=c;LLP.vals=llVals(cur,c);LLP.open={};var nb=LLP.vals.filter(function(x){return x[0]!==''}),nd=nb.filter(function(x){return /^\d\d\/\d\d\/\d{4}$/.test(x[0])}).length;LLP.isDate=nd>0&&(/date/i.test(cur.head[c]||'')||nd>=nb.length*0.6);LLP.sel={};LLP.vals.forEach(function(x){LLP.sel[x[0]]=!F||!F.length||(FU?FU.indexOf(String(x[0]).toUpperCase())>=0:F.indexOf(x[0])>=0)});
   var p=document.createElement('div');p.id='llpop';p.className='llpop';
   var so=LL.s[LL.kind],sa=so&&so.c===c&&so.d>0,sz=so&&so.c===c&&so.d<0;
   p.innerHTML='<div class="llsort"><button type="button" id="llsa" class="'+(sa?'on':'')+'">Sort A to Z</button><button type="button" id="llsz" class="'+(sz?'on':'')+'">Sort Z to A</button></div><input type="search" placeholder="Search" aria-label="Search values" autocomplete="off"><label class="llall"><input type="checkbox" id="llpall"><span>(Select all)</span></label><div class="llpl"></div><div class="llpb"><button type="button" id="llpclr">Clear filter</button><button type="button" class="p" id="llpok">OK</button></div>';
@@ -2976,7 +2992,7 @@ $('ll-d').onclick=function(){LL.kind='D';renderList()};$('ll-p').onclick=functio
   document.addEventListener('keydown',function(e){if(e.key==='Escape')llPopClose()});
   document.addEventListener('input',function(e){var p=document.getElementById('llpop');if(p&&e.target===p.querySelector('input[type=search]'))llPopList()});
   document.addEventListener('change',function(e){var p=document.getElementById('llpop');if(!p||!p.contains(e.target))return;var t=e.target;
-    if(t.id==='llpall'){LLP.vis.forEach(function(x){LLP.sel[x[0]]=t.checked})}else if(t.hasAttribute('data-k')){var kk=t.getAttribute('data-k').split('|');LLP.vis.forEach(function(x){if(x[0]==='')return;var y=x[0].slice(6),m=x[0].slice(0,2);if(kk[1]===y&&(kk[0]==='y'||kk[2]===m))LLP.sel[x[0]]=t.checked})}else if(t.hasAttribute('data-v')){LLP.sel[t.getAttribute('data-v')]=t.checked}llPopList()});
+    if(t.id==='llpall'){LLP.vis.forEach(function(x){LLP.sel[x[0]]=t.checked})}else if(t.hasAttribute('data-k')){var kk=t.getAttribute('data-k').split('|');LLP.vis.forEach(function(x){if(x[0]===''||!LL_ISD.test(x[0]))return;var y=x[0].slice(6),m=x[0].slice(0,2);if(kk[1]===y&&(kk[0]==='y'||kk[2]===m))LLP.sel[x[0]]=t.checked})}else if(t.hasAttribute('data-v')){LLP.sel[t.getAttribute('data-v')]=t.checked}llPopList()});
   document.addEventListener('click',function(e){var tg=e.target.closest&&e.target.closest('.llx');if(tg&&LLP.open){var k=tg.getAttribute('data-t');LLP.open[k]=!LLP.open[k];llPopList();return}
   if(e.target.id==='llsa'||e.target.id==='llsz'){var d=e.target.id==='llsa'?1:-1,o=LL.s[LL.kind];LL.s[LL.kind]=(o&&o.c===LLP.c&&o.d===d)?null:{c:LLP.c,d:d};llPopClose();LL.hdr=null;renderList();return}
   if(e.target.id==='llpclr'){if(LLP.c===1){SELB=[];llPopClose();renderDash();return}delete LL.f[LL.kind][LLP.c];llPopClose();LL.hdr=null;renderList()}
