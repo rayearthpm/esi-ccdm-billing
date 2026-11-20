@@ -2210,9 +2210,17 @@ function amountOf2(bank,cut,ctx){
   function isErr(x){return !!(x&&x.error)||x==='#N/A'}
   o.rows.forEach(function(r){var x=r[ix];if(typeof x==='number')sum+=x;else{na++;
     var cols=[];o.headers.forEach(function(h,i){if(isErr(r[i]))cols.push(String(h).replace(/\s+/g,' ').trim())});
-    bad.push({tid:iT>=0?r[iT]:'',name:iN>=0?r[iN]:'',ser:iS>=0?r[iS]:'',cap:iC>=0?r[iC]:'',cols:cols})}});
+    var tid0=iT>=0?r[iT]:'',ser0=iS>=0?r[iS]:'';
+    if((ser0===''||ser0===null||ser0===undefined)&&tid0!==''&&tid0!==null&&typeof TBL!=='undefined'&&TBL)ser0=serByTid(tid0);
+    bad.push({tid:tid0,name:iN>=0?r[iN]:'',ser:ser0,cap:iC>=0?r[iC]:'',cols:cols})}});
   if(o._turn)o._turn.forEach(function(t){sum+=t.amt});
   return{amt:sum,svc:svcFrom(o),na:na,bad:bad};
+}
+var SERTID=null,SERTID_FOR=null;
+function serByTid(tid){ /* a bill without a serial column: take the Machine S/N from the Deployed / Pullout lists by TID */
+  if(SERTID_FOR!==TBL){SERTID_FOR=TBL;SERTID={};[TBL.Deployed,TBL.Pullout].forEach(function(t){if(!t||!t.ws)return;var iT=tcol(t,'TID'),iS=tcol(t,'Machine S/N');if(iT<0||iS<0)return;
+    for(var r=t.hr+1;r<=t.last;r++){var a=tval(t,r,iT),b=tval(t,r,iS);if(a===null||b===null)continue;var k=String(a).toLowerCase();if(!(k in SERTID))SERTID[k]=b}})}
+  var v=SERTID[String(tid).toLowerCase()];return v===undefined?'':v;
 }
 function svcFrom(o){
   var s={cash:0,phone:0,flm:0,slm:0,pm:0},ch=o.checks||[];
@@ -2273,15 +2281,20 @@ function computeAmounts(){
     if(AMT.key===key){AMT.data={v:v,e:e,s:s,m:m,n:nn,b:bb};renderDash()}
   },40);
 }
-var NAOPEN={};
+var NAOPEN={},NAW=[130,90,280,90,230];
+try{var _w=JSON.parse(localStorage.getItem('esiNaW')||'null');if(_w&&_w.length===5)NAW=_w}catch(e){}
 function naHtml(){
   var n=AMT.data.n||{},ks=Object.keys(n);if(!ks.length)return '';
+  var HD=['Machine Serial','TID','Client','Capacity','Error in'];
   return ks.map(function(b){
     var open=!!NAOPEN[b],bad=(AMT.data.b&&AMT.data.b[b])||[];
     var h='<p class="nabad" data-b="'+esc(b)+'" role="button" tabindex="0" style="margin-top:10px;color:var(--bad);cursor:pointer;font-weight:600">'+(open?'▾':'▸')+' Estimate is short for '+esc(b)+': '+n[b]+' machine'+(n[b]>1?'s':'')+' with no price match (#N/A) – click to '+(open?'hide':'see which')+'</p>';
     if(open){
-      h+='<div style="max-height:240px;overflow:auto;border:1px solid var(--bad);border-radius:8px;margin-top:6px"><table style="width:100%;font-size:12px;border-collapse:collapse;color:var(--bad)"><tr style="text-align:left"><th style="padding:5px 8px">Machine Serial</th><th style="padding:5px 8px">TID</th><th style="padding:5px 8px">Client</th><th style="padding:5px 8px">Capacity</th><th style="padding:5px 8px">Error in</th></tr>';
-      bad.slice(0,200).forEach(function(x){h+='<tr style="border-top:1px solid var(--line)"><td style="padding:4px 8px">'+esc(x.ser===null||x.ser===undefined?'':x.ser)+'</td><td style="padding:4px 8px">'+esc(x.tid===null||x.tid===undefined?'':x.tid)+'</td><td style="padding:4px 8px">'+esc(x.name===null||x.name===undefined?'':x.name)+'</td><td style="padding:4px 8px">'+esc(x.cap===null||x.cap===undefined||x.cap===''?'(blank)':(x.cap&&x.cap.error?x.cap.error:x.cap))+'</td><td style="padding:4px 8px">'+esc(x.cols.slice(0,3).join(', ')+(x.cols.length>3?' +'+(x.cols.length-3):''))+'</td></tr>'});
+      var tw=NAW.reduce(function(a,x){return a+x},0),c='padding:4px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      h+='<div style="max-height:240px;overflow:auto;border:1px solid var(--bad);border-radius:8px;margin-top:6px"><table class="natbl" style="table-layout:fixed;width:'+tw+'px;font-size:12px;border-collapse:collapse;color:var(--bad)"><colgroup>'+NAW.map(function(w,i){return'<col data-i="'+i+'" style="width:'+w+'px">'}).join('')+'</colgroup><tr style="text-align:left">'+HD.map(function(t,i){return'<th style="position:relative;padding:5px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t+'<span class="nares" data-i="'+i+'" title="Drag to resize" style="position:absolute;right:0;top:0;bottom:0;width:7px;cursor:col-resize;border-right:2px solid var(--line)"></span></th>'}).join('')+'</tr>';
+      bad.slice(0,200).forEach(function(x){
+        var v=function(y){return y===null||y===undefined?'':String(y)},cap=x.cap===null||x.cap===undefined||x.cap===''?'(blank)':(x.cap&&x.cap.error?x.cap.error:x.cap),err=x.cols.slice(0,3).join(', ')+(x.cols.length>3?' +'+(x.cols.length-3):'');
+        h+='<tr style="border-top:1px solid var(--line)">'+[v(x.ser),v(x.tid),v(x.name),v(cap),err].map(function(t){return'<td title="'+esc(t)+'" style="'+c+'">'+esc(t)+'</td>'}).join('')+'</tr>'});
       h+='</table></div>';
     }
     return h;
@@ -2289,6 +2302,15 @@ function naHtml(){
 }
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('.nabad');if(!t)return;var b=t.getAttribute('data-b');NAOPEN[b]=!NAOPEN[b];renderDash()});
 document.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('nabad')){e.preventDefault();e.target.click()}});
+/* drag a header edge to resize a column of the error table */
+document.addEventListener('pointerdown',function(e){
+  var h=e.target.closest&&e.target.closest('.nares');if(!h)return;e.preventDefault();
+  var i=+h.getAttribute('data-i'),x0=e.clientX,w0=NAW[i],tb=h.closest('table'),col=tb.querySelectorAll('col')[i];
+  function mv(ev){NAW[i]=Math.max(50,Math.round(w0+ev.clientX-x0));col.style.width=NAW[i]+'px';tb.style.width=NAW.reduce(function(a,x){return a+x},0)+'px'}
+  function up(){document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);try{localStorage.setItem('esiNaW',JSON.stringify(NAW))}catch(e){}}
+  document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up);
+});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.nares'))e.stopPropagation()},true);
 function svcItems(b){
   var s=AMT.data.s[b];if(!s)return[];if(s.x)return s.x;
   var o=[['Cash retrieval',s.cash],['Phone support',s.phone],['FLM',s.flm],['SLM',s.slm]];if(s.pm)o.push(['PM',s.pm]);return o;
