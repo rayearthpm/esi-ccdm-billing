@@ -2223,9 +2223,11 @@ function machineCounts(bank,usePer){
     var iB=tcol(t,'Bank'),iS=tcol(t,'Machine Status'),iM=tcol(t,'Machine Type');
     if(iM<0)iM=21;if(iB<0)iB=1;
     if(iS<0)return;
+    var LA=window.ESI_ALLOW||null;
     var iDt=P?tcol(t,kind==='D'?'Deployment Date':'Pull Out Date'):-1,iSn=P?tcol(t,'Machine S/N'):-1;
     if(P&&iDt<0)return;
     for(var r=t.hr+1;r<=t.last;r++){
+      if(LA&&LA.indexOf(String(tval(t,r,iB)||'').trim().toUpperCase())<0)continue;
       var st=String(tval(t,r,iS)||'').trim().toLowerCase(),isDep=kind==='D'&&(st==='operational'||st==='not operational'),isPul=kind==='P'&&st==='pull out';
       if(P){ /* movement in the period: deployed by Deployment Date, pulled out by Pull Out Date (any status), serial required */
         var dv=tval(t,r,iDt);if(typeof dv==='string'){var dm=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(dv.trim());dv=dm?new Date(+dm[3]<100?2000+ +dm[3]:+dm[3],+dm[1]-1,+dm[2]):null}
@@ -2763,6 +2765,7 @@ function llBuild(t){
   var head=LL_COLS.map(function(c){var x=cell(t.hr,c);return x?String(x.w!==undefined?x.w:x.v).trim():''}),rows=[];
   for(var r=t.hr+1;r<=t.last;r++){
     var sx=cell(r,2);if(!sx||sx.v===undefined||sx.v===null||String(sx.v).trim()==='')continue;
+    if(window.ESI_ALLOW){var bx=cell(r,1);if(window.ESI_ALLOW.indexOf(String(bx&&bx.v!==undefined?bx.v:'').trim().toUpperCase())<0)continue}
     rows.push(LL_COLS.map(function(c){return llVal(cell(r,c))}));
   }
   return llOpts({head:head,rows:rows});
@@ -3028,6 +3031,7 @@ async function liveCheck(force){
 function livePreview(){
   var T={BDO:{KUN505:[40,0],KUN510:[1300,4],KUN520:[430,3]},BPI:{KUN510:[60,0],KUN520:[28,0]},CBC:{KUN510:[70,1],KUN520:[30,0]},MBTC:{KUN505:[120,0],KUN510:[200,2],KUN520:[90,0]},PNB:{KUN505:[26,0],KUN510:[78,1],KUN520:[26,1]},RCBC:{KUN505:[200,0],KUN510:[220,0],KUN520:[60,1]},SBC:{KUN510:[45,0],KUN520:[10,0]}};
   var A={BDO:36e6,BPI:1.8e6,CBC:2.1e6,MBTC:6.6e6,PNB:2.6e6,RCBC:8.4e6,SBC:2.68e6};
+  if(window.ESI_ALLOW)Object.keys(T).forEach(function(k){if(window.ESI_ALLOW.indexOf(k)<0){delete T[k];delete A[k]}});
   var mc={'':{banks:{},btot:{},types:{},dep:0,pul:0,notop:0}};
   Object.keys(T).forEach(function(b){
     var o={banks:{},btot:{},types:{},dep:0,pul:0,notop:0};
@@ -3053,7 +3057,8 @@ function livePreview(){
       var t=TY[(parseInt(r[2].replace(/\D/g,''),10)||i)%4],x=o.types[t]||(o.types[t]={dep:0,pul:0});
       if(a[0]==='D'){if(r[4]==='Not Operational')o.notop++;x.dep++;o.dep++}else{x.pul++;o.pul++}})});
     return o};
-  document.body.classList.add('wide');LL.cache={wb:WB,D:llOpts({head:H1,rows:LD}),P:llOpts({head:H1.map(function(h,i){return i===0?'Redeployment Type':h}),rows:LP})};renderDash();
+  document.body.classList.add('wide');if(window.ESI_ALLOW){LD=LD.filter(function(r){return window.ESI_ALLOW.indexOf(r[1])>=0});LP=LP.filter(function(r){return window.ESI_ALLOW.indexOf(r[1])>=0})}
+  LL.cache={wb:WB,D:llOpts({head:H1,rows:LD}),P:llOpts({head:H1.map(function(h,i){return i===0?'Redeployment Type':h}),rows:LP})};renderDash();
   liveSay('ok','Connected to <b>CCDM_DB_LIVE.xlsm</b> · OneDrive · file updated Nov 19, 5:02 PM · refreshes automatically <span style="color:var(--muted)">(preview with sample numbers)</span>');
 }
 if(/[?&]embed=1/.test(location.search)){document.body.classList.add('embed');
@@ -3061,6 +3066,7 @@ if(/[?&]embed=1/.test(location.search)){document.body.classList.add('embed');
   if(window.ResizeObserver)new ResizeObserver(livePostH).observe(document.querySelector('.shell'));window.addEventListener('load',livePostH)}
 async function startLive(){
   try{DBM=await claude.use('db')}catch(e){}
+  try{if(window.ESI_ME){var me0=await window.ESI_ME;if(me0&&me0.banks&&me0.banks.length)window.ESI_ALLOW=me0.banks.map(function(x){return String(x).toUpperCase()})}}catch(e){}
   livePrevSetup();try{var uu=await claude.use('user');PREV.nonadmin=!!uu&&!uu.canEdit()}catch(e){}
   if(window.ESI_LIVE==='preview'){livePreview();return}
   liveCheck(true);setInterval(liveCheck,300000);

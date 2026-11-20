@@ -1,7 +1,7 @@
 // Gives the billing page the same sharing connector it has on claude.ai, backed by this server.
 (function(){
   window.ESI_SERVER=true;
-  var me=null,mep=fetch('/api/me').then(function(r){return r.ok?r.json():null}).then(function(j){me=j;return j}).catch(function(){return null});
+  window.ESI_ME=null;var me=null,mep=fetch('/api/me').then(function(r){return r.ok?r.json():null}).then(function(j){me=j;return j}).catch(function(){return null});window.ESI_ME=mep;
   function call(m,p,b){return fetch('/api/doc?path='+encodeURIComponent(p),{method:m,headers:{'Content-Type':'application/json'},body:b===undefined?undefined:JSON.stringify(b)}).then(function(r){
     if(r.status===401){location.href='/login';throw {code:'signed_out'}}
     return r.json().then(function(j){if(!r.ok)throw {code:r.status===403?'invalid_argument':'unavailable',message:j.error};return j})})}

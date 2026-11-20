@@ -2124,9 +2124,11 @@ function machineCounts(bank,usePer){
     var iB=tcol(t,'Bank'),iS=tcol(t,'Machine Status'),iM=tcol(t,'Machine Type');
     if(iM<0)iM=21;if(iB<0)iB=1;
     if(iS<0)return;
+    var LA=window.ESI_ALLOW||null;
     var iDt=P?tcol(t,kind==='D'?'Deployment Date':'Pull Out Date'):-1,iSn=P?tcol(t,'Machine S/N'):-1;
     if(P&&iDt<0)return;
     for(var r=t.hr+1;r<=t.last;r++){
+      if(LA&&LA.indexOf(String(tval(t,r,iB)||'').trim().toUpperCase())<0)continue;
       var st=String(tval(t,r,iS)||'').trim().toLowerCase(),isDep=kind==='D'&&(st==='operational'||st==='not operational'),isPul=kind==='P'&&st==='pull out';
       if(P){ /* movement in the period: deployed by Deployment Date, pulled out by Pull Out Date (any status), serial required */
         var dv=tval(t,r,iDt);if(typeof dv==='string'){var dm=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(dv.trim());dv=dm?new Date(+dm[3]<100?2000+ +dm[3]:+dm[3],+dm[1]-1,+dm[2]):null}
