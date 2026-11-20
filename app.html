@@ -2522,12 +2522,21 @@ function fmtCell(v,money){
   return v===null||v===undefined?'':String(v);
 }
 var PV={bank:'',type:''};
+function billGrand(o,bank,type){ /* grand total of a bill, from its own totals row (same columns the Dashboard uses) */
+  var t=o.totals;if(!t)return null;
+  function ci(re,last){var f=-1;o.headers.forEach(function(x,i){if(re.test(String(x).trim()))f=last||f<0?i:f});return f}
+  function v(i){return i>=0&&typeof t[i]==='number'?t[i]:null}
+  if(bank==='BPI'){var a=v(ci(/^lease rental charges$/i,true)),b=v(ci(/^services total$/i,true));return a===null&&b===null?null:(a||0)+(b||0)}
+  if(bank==='BDO'&&type==='Masterlist')return null;
+  if(bank==='BDO'&&type==='Fixed')return v(ci(/fee$/i,true));
+  return v(ci(/^total( amount)?$/i,true));
+}
 function preview(bank,type){
   $('s3').classList.remove('hide');
   if(PV.bank!==bank||PV.type!==type){$('q').value='';PV.bank=bank;PV.type=type}
   PV.show=function(){preview(bank,type)};
-  var chs=OUT.checks||[],bad=chs.filter(function(c){return !c.ok}).length;
-  $('stats').innerHTML='<div class="stat"><span>Machines billed</span><b>'+(OUT.count||OUT.rows.length).toLocaleString()+'</b></div>'+(typeof OUT.grand==='number'?'<div class="stat"><span>Totaled Billed Amount</span><b>₱'+OUT.grand.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</b></div>':'')+'<div class="stat"><span>Checks passed</span><b>'+(chs.length-bad)+' of '+chs.length+'</b></div><div class="stat"><span>File name</span><b style="font-size:13px;font-weight:600">'+esc(OUT.fileName||OUT.name)+'</b></div>';
+  var chs=OUT.checks||[],bad=chs.filter(function(c){return !c.ok}).length,gr=typeof OUT.grand==='number'?OUT.grand:billGrand(OUT,bank,type);
+  $('stats').innerHTML='<div class="stat"><span>Machines billed</span><b>'+(OUT.count||OUT.rows.length).toLocaleString()+'</b></div>'+(typeof gr==='number'?'<div class="stat"><span>Totaled Billed Amount</span><b>₱'+gr.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</b></div>':'')+'<div class="stat"><span>Checks passed</span><b>'+(chs.length-bad)+' of '+chs.length+'</b></div><div class="stat"><span>File name</span><b style="font-size:13px;font-weight:600">'+esc(OUT.fileName||OUT.name)+'</b></div>';
   var mc=OUT.money||[],H='<tr>'+OUT.headers.map(function(h,i){var s=OUT.rows[0]?OUT.rows[0][i]:null;return'<th class="'+(typeof s==='number'||mc.indexOf(i)>=0?'n':'')+'">'+esc(h)+'</th>'}).join('')+'</tr>';
   if(OUT.totals)H+='<tr class="tot">'+OUT.totals.map(function(v,i){var m=mc.indexOf(i)>=0;return'<td class="'+(m||typeof v==='number'?'n':'')+'">'+esc(v===''||v===null?'':(typeof v==='number'?fmtCell(v,m):v))+'</td>'}).join('')+'</tr>';
   var q=($('q').value||'').trim().toLowerCase(),rows=OUT.rows;
