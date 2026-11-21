@@ -267,6 +267,7 @@ body.embed .mast{display:none}
 #lltbl th,#lltbl td{padding:7px 9px;text-align:left}#lltbl td{white-space:nowrap}
 #lltbl th{vertical-align:top;min-width:84px}
 #lltbl td{overflow:hidden;text-overflow:ellipsis;max-width:260px}
+#lltbl td.wpb{overflow:visible;max-width:none}.pbar{position:relative;display:block;width:100%;height:22px;border-radius:6px;overflow:hidden;background:rgba(var(--pc),.16);border:1px solid rgba(var(--pc),.35)}.pbar .pf{position:absolute;left:0;top:0;bottom:0;border-radius:5px 0 0 5px;background:repeating-linear-gradient(135deg,rgba(var(--pc),.55) 0 6px,rgba(var(--pc),.32) 6px 12px);transition:width .3s}.pbar .pt{position:relative;z-index:1;display:flex;justify-content:space-between;gap:8px;padding:0 8px;line-height:20px;font-size:11.5px;font-weight:700;color:var(--fg);white-space:nowrap}.pbar .pt em{font-style:normal;font-weight:700;color:rgb(var(--pc));filter:brightness(.8)}.wpb{--pc:148,163,184}.wpb.p1{--pc:245,158,11}.wpb.p2{--pc:59,130,246}.wpb.full{--pc:22,163,74}.wpb.hyb{--pc:220,38,38}.wpb.hyb .pbar{background:rgba(220,38,38,.30);border-color:rgba(220,38,38,.55)}.wpb.hyb .pbar .pf{display:none}#lltbl tr.hybrow td{background:rgba(220,38,38,.10)}
 #lltbl thead th{position:sticky;top:0}
 #lltbl thead th{z-index:2}#lltbl .llh{display:block;min-height:2.7em;line-height:1.3;margin-bottom:4px;padding-right:6px}
 #lltbl th{position:sticky}
@@ -2891,7 +2892,7 @@ $('pubBtn').onclick=publishAll;
 /* ---------- Live: Deployed_List and Pullout_List details (rows with a Machine S/N) ---------- */
 var LL={page:0,pk:'',kind:'D',cache:{wb:null,D:null,P:null,W:null},q:'',f:{D:{},P:{},W:{}},hdr:null};
 var LL_COLS=[0,1,2,3,4,13,15,22,23,43,44];
-var LLW_COLS=[1,2,5,7,8,9,10,11,12]; /* WIP: Deployed_List B, C, F, H-M, then G last */
+var LLW_COLS=[1,5,7,8,9,10,11,12]; /* WIP: Deployed_List B, F, H-M; a Progress column (stages done) takes the place of Machine S/N, right after Bank */
 function llBI(k){return k==='W'?0:1} /* A-E, N, P, W, X, AR, AS */
 function llMDY(d){return ('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2)+'/'+d.getFullYear()}
 var LL_M3={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
@@ -2920,11 +2921,14 @@ function llBuild(t,wip){
     if(ci>=0&&bi>=0&&CC.indexOf(t.start+ci)<0){CC=CC.slice();CC.splice(bi+1,0,t.start+ci)}
   }
   var head=CC.map(function(c){var x=cell(t.hr,c);return x?String(x.w!==undefined?x.w:x.v).trim():''}),rows=[];
+  if(wip)head.splice(1,0,'Progress');
   for(var r=t.hr+1;r<=t.last;r++){
     var sx=cell(r,2),hs=!!sx&&sx.v!==undefined&&sx.v!==null&&String(sx.v).trim()!=='';
     if(wip){if(hs)continue;var wb1=cell(r,1),wt=cell(r,3);if(!((wb1&&String(wb1.v).trim()!=='')||(wt&&String(wt.v).trim()!=='')))continue}else if(!hs)continue;
     if(window.ESI_ALLOW){var bx=cell(r,1);if(window.ESI_ALLOW.indexOf(String(bx&&bx.v!==undefined?bx.v:'').trim().toUpperCase())<0)continue}
-    rows.push(CC.map(function(c){return llVal(cell(r,c))}));
+    var row=CC.map(function(c){return llVal(cell(r,c))});
+    if(wip){var stg=row.slice(2),dn=stg.filter(function(v,i){return llDone(head[2+i+1],v)}).length;row.splice(1,0,dn+'/'+stg.length)} /* stages Scoping .. For Deployment: a date = done */
+    rows.push(row);
   }
   return llOpts({head:head,rows:rows});
 }
@@ -2938,8 +2942,9 @@ function llData(){
   return LL.cache;
 }
 function llTitle(h){return String(h).trim().toLowerCase().replace(/(^|[\s\/\-(])([a-z])/g,function(m,a,b){return a+b.toUpperCase()}).replace(/\b(Tid|Pm|Slm|Flm|Atm|Msr|Ocr)\b/g,function(w){return w.toUpperCase()})}
-LL.w={D:{},P:{},W:{}};LL.s={D:null,P:null,W:null};
-function llW(i){var W=LL.w[LL.kind];if(W[i]!==undefined)return W[i];if(LL.kind==='W')return i===0?86:i===1?112:i===2?190:i>=3?112:null;return i===0?(LL.kind==='P'?190:120):i===1?86:i===2?112:null}
+function llDefS(){return{c:1,d:-1,auto:1}} /* WIP lists itself by Progress, most stages done first, every time the data changes */
+LL.w={D:{},P:{},W:{}};LL.s={D:null,P:null,W:llDefS()};
+function llW(i){var W=LL.w[LL.kind];if(W[i]!==undefined)return W[i];if(LL.kind==='W')return i===0?86:i===1?340:i===2?190:i>=3?112:null;return i===0?(LL.kind==='P'?190:120):i===1?86:i===2?112:null}
 function llFz(){var v=null;try{v=localStorage.getItem('esiFreeze')}catch(e){}if(v===null||v===''||isNaN(+v))return window.innerWidth<700?1:3;return Math.max(0,Math.min(3,+v))}
 function llStyle(){
   var el=document.getElementById('llstyle');if(!el){el=document.createElement('style');el.id='llstyle';document.head.appendChild(el)}
@@ -2962,6 +2967,25 @@ function llSelOf(c){ /* the Bank column and the bank rail are one filter */
 }
 function llBtn(c){var f=llSelOf(c),n=f?f.length:0;return{n:n,lab:n?(n===1?(f[0]===''?'(Blank)':f[0]):n+(c===llBI(LL.kind)?' sel.':' selected')):'All',tip:n?f.join(', '):'Filter'}}
 function llSync(){var b=document.querySelector('#lltbl .llf[data-c="1"]');if(!b)return;var x=llBtn(1);b.textContent=x.lab;b.title=x.tip;b.classList.toggle('on',!!x.n)}
+function llDone(h,v){ /* a stage is finished when it holds a date, or the status key allowed for that stage */
+  v=String(v==null?'':v).trim();if(/^\d\d\/\d\d\/\d{4}$/.test(v))return true;
+  var k=v.toLowerCase().replace(/\s*-\s*/g,'-').replace(/\s+/g,' '),t=String(h||'').toLowerCase();
+  if(/scoping/.test(t))return k==='done';
+  if(/ocular\s*visit/.test(t))return k==='done'||k==='out of scope'||k==='client confirmation';
+  if(/ocular\s*report/.test(t))return k==='done-sent';
+  if(/msr|enroll|deploy/.test(t))return k==='done';
+  return false;
+}
+function llHyb(cur,r){ /* Ocular Visit = Out of Scope -> possible hybrid */
+  for(var i=3;i<cur.head.length;i++)if(/ocular\s*visit/i.test(cur.head[i])&&String(r[i]||'').trim().toLowerCase()==='out of scope')return true;
+  return false;
+}
+function llPbar(v,cur,r){ /* WIP progress: one translucent striped bar; fill = finished stages / all stages, colour follows the progress */
+  var n=cur.head.length-3,tip=[],dn=0,stp='';
+  for(var i=0;i<n;i++){var on=llDone(cur.head[3+i],r[3+i]);if(on)dn++;else if(!stp)stp=llTitle(cur.head[3+i]);tip.push((on?'✔ ':'○ ')+cur.head[3+i]+(on?' · '+(r[3+i]||''):''))}
+  var hy=llHyb(cur,r),pc=n?dn/n:0,cl=hy?'hyb':(n&&dn===n?'full':(pc>=.5?'p2':(dn>0?'p1':'')));
+  return'<td class="wpb '+cl+'" title="'+esc((hy?'Possible Hybrid (Ocular Visit: Out of Scope)\n':'')+tip.join('\n'))+'"><span class="pbar"><span class="pf" style="width:'+Math.round(pc*100)+'%"></span><span class="pt"><span>'+esc(v)+(stp?' · '+esc(stp):' · Complete')+'</span>'+(hy?'<em>Possible Hybrid</em>':'')+'</span></span></td>';
+}
 function llHeadHtml(cur){
   var F=LL.f[LL.kind];
   return'<thead><tr><th class="lln"><span class="llh">#</span><div class="llfx"></div></th>'+cur.head.map(function(h,i){
@@ -3148,11 +3172,11 @@ function llWSum(d,q0,sel0){ /* WIP milestone summary: dated cells are done; any 
   var oth=function(r,skip){for(var k in F){if(!F[k]||!F[k].length||+k===skip)continue;if(F[k].indexOf(r[+k])<0)return false}return true};
   var base=function(r){if(sel0&&sel0.indexOf(String(r[0]).toUpperCase())<0)return false;if(q0&&r.join('\u0001').toLowerCase().indexOf(q0)<0)return false;return true};
   var tot=0;cur.rows.forEach(function(r){if(base(r)&&oth(r,-1))tot++});
-  var DV={};MS.forEach(function(c){var s={};cur.rows.forEach(function(r){if(isd(r[c]))s[r[c]]=1});DV[c]=Object.keys(s)});
+  var DV={};MS.forEach(function(c){var s={};cur.rows.forEach(function(r){if(llDone(cur.head[c],r[c]))s[r[c]]=1});DV[c]=Object.keys(s)});
   var actD=function(c){return !!(F[c]&&DV[c].length&&DV[c].every(function(v){return F[c].indexOf(v)>=0}))},actV=function(c,v){return !!(F[c]&&F[c].indexOf(v)>=0)},any=MS.some(function(c){return F[c]&&F[c].length});
   var h='<button type="button" class="wchip wall'+(any?'':' on')+'" data-c="*"><b>'+tot.toLocaleString('en-US')+'</b><span>WIP machines</span><i><u style="width:100%"></u></i></button>';
   MS.forEach(function(c){
-    var done=0,cat={};cur.rows.forEach(function(r){if(!base(r)||!oth(r,c))return;var v=r[c];if(isd(v))done++;else cat[v]=(cat[v]||0)+1});
+    var done=0,cat={};cur.rows.forEach(function(r){if(!base(r)||!oth(r,c))return;var v=r[c];if(llDone(cur.head[c],v))done++;else cat[v]=(cat[v]||0)+1});
     var ks=Object.keys(cat).sort(function(a,b){return cat[b]-cat[a]||(a<b?-1:1)}),pend=0;ks.forEach(function(k){pend+=cat[k]});
     h+='<div class="wchip wcol'+(actD(c)?' on':'')+'"><button type="button" class="wmain" data-c="'+c+'" title="Add or remove machines with a date in '+esc(cur.head[c])+' (click several to combine)"><b>'+done.toLocaleString('en-US')+'</b><span>'+esc(llTitle(cur.head[c]))+' · done</span><i><u style="width:'+Math.min(100,Math.round(done/(tot||1)*100))+'%"></u></i></button>';
     h+='<div class="wpend"><em>'+pend.toLocaleString('en-US')+' pending</em>';
@@ -3185,13 +3209,13 @@ function renderList(){
     if(q&&r.join('\u0001').toLowerCase().indexOf(q)<0)continue;
     out.push(r);
   }
-  var SO=LL.s[LL.kind];
-  if(SO){var sc=SO.c,sd=SO.d;out.sort(function(a,b){var x=a[sc],y=b[sc];if(x===''&&y==='')return 0;if(x==='')return 1;if(y==='')return -1;return sd*llKey(x).localeCompare(llKey(y),undefined,{numeric:true,sensitivity:'base'})})}
-  var PG=500,pk=LL.kind+'|'+q+'|'+JSON.stringify(SO)+JSON.stringify(PER)+JSON.stringify(F)+'|'+(sel||[]).join(',');if(LL.pk!==pk){LL.pk=pk;LL.page=0}var pages=Math.max(1,Math.ceil(out.length/PG));if(LL.page>=pages)LL.page=pages-1;if(LL.page<0)LL.page=0;var shown=out.slice(LL.page*PG,LL.page*PG+PG),active=!!(q||fk.length||SO||PER);
+  var SO=LL.s[LL.kind],SX=SO||(LL.kind==='W'?llDefS():null);
+  if(SX){var sc=SX.c,sd=SX.d;out.sort(function(a,b){var x=a[sc],y=b[sc];if(LL.kind==='W'&&sc===1)return sd*((parseInt(x,10)||0)-(parseInt(y,10)||0));if(x===''&&y==='')return 0;if(x==='')return 1;if(y==='')return -1;return sd*llKey(x).localeCompare(llKey(y),undefined,{numeric:true,sensitivity:'base'})})}
+  var PG=500,pk=LL.kind+'|'+q+'|'+JSON.stringify(SO)+JSON.stringify(PER)+JSON.stringify(F)+'|'+(sel||[]).join(',');if(LL.pk!==pk){LL.pk=pk;LL.page=0}var pages=Math.max(1,Math.ceil(out.length/PG));if(LL.page>=pages)LL.page=pages-1;if(LL.page<0)LL.page=0;var shown=out.slice(LL.page*PG,LL.page*PG+PG),active=!!(q||fk.length||(SO&&!SO.auto)||PER);
   $('llclr').classList.toggle('hide',!active);LL.out=out;LL.outCur=cur;
   $('llinfo').textContent=(LL.kind==='D'?'Deployed_List':LL.kind==='P'?'Pullout_List':'Deployed_List · WIP')+(LL.kind==='W'?' · no machine serial number yet · ':' · machines with a serial number · ')+(out.length===cur.rows.length?'all ':N(out.length)+' of ')+N(cur.rows.length)+(sel?' · bank: '+sel.join(', '):'')+(fk.length?' · '+fk.length+' column filter'+(fk.length>1?'s':''):'')+(out.length>PG?' · showing the first '+PG+', search or filter to narrow down':'');
   $('llpg').innerHTML='';
-  $('lltbl').querySelector('tbody').innerHTML=shown.length?shown.map(function(r,ri){return'<tr><td class="lln">'+N(LL.page*PG+ri+1)+'</td>'+r.map(function(v){return'<td title="'+esc(v)+'">'+esc(v)+'</td>'}).join('')+'</tr>'}).join(''):'<tr><td colspan="'+(cur.head.length+1)+'" style="text-align:center;color:var(--muted);padding:20px">No machines match.</td></tr>';
+  $('lltbl').querySelector('tbody').innerHTML=shown.length?shown.map(function(r,ri){return'<tr'+(LL.kind==='W'&&llHyb(cur,r)?' class="hybrow"':'')+'><td class="lln">'+N(LL.page*PG+ri+1)+'</td>'+r.map(function(v,ci){if(LL.kind==='W'&&ci===1)return llPbar(v,cur,r);return'<td title="'+esc(v)+'">'+esc(v)+'</td>'}).join('')+'</tr>'}).join(''):'<tr><td colspan="'+(cur.head.length+1)+'" style="text-align:center;color:var(--muted);padding:20px">No machines match.</td></tr>';
 }
 $('embbill').onclick=function(){try{parent.postMessage({esiGo:'billing'},location.origin)}catch(e){}};
 $('llpg').addEventListener('click',function(e){var id=e.target&&e.target.id;if(id==='llprev'){LL.page--;renderList()}else if(id==='llnext'){LL.page++;renderList()}});
@@ -3209,7 +3233,7 @@ $('ll-d').onclick=function(){LL.kind='D';renderList()};$('ll-p').onclick=functio
 $('llwsum').addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('button');if(!t||!llData()||!llData().W)return;var W=llData().W,F=LL.f.W,isd=function(v){return /^\d\d\/\d\d\/\d{4}$/.test(v)};
   if(t.classList.contains('wall')){for(var k=3;k<W.head.length;k++)delete F[k]}
   else if(t.classList.contains('wcat')){var c=+t.getAttribute('data-c'),v=t.getAttribute('data-v'),a=(F[c]||[]).slice(),ix=a.indexOf(v);if(ix>=0)a.splice(ix,1);else a.push(v);if(a.length)F[c]=a;else delete F[c]}
-  else if(t.classList.contains('wmain')){var c2=+t.getAttribute('data-c'),s={};W.rows.forEach(function(r){if(isd(r[c2]))s[r[c2]]=1});var dv=Object.keys(s),a2=(F[c2]||[]).slice(),all=dv.length&&dv.every(function(v){return a2.indexOf(v)>=0});
+  else if(t.classList.contains('wmain')){var c2=+t.getAttribute('data-c'),s={};W.rows.forEach(function(r){if(llDone(W.head[c2],r[c2]))s[r[c2]]=1});var dv=Object.keys(s),a2=(F[c2]||[]).slice(),all=dv.length&&dv.every(function(v){return a2.indexOf(v)>=0});
     if(all)a2=a2.filter(function(v){return dv.indexOf(v)<0});else dv.forEach(function(v){if(a2.indexOf(v)<0)a2.push(v)});if(a2.length)F[c2]=a2;else delete F[c2]}
   else return;
   LL.hdr=null;renderList()});
@@ -3243,7 +3267,7 @@ document.addEventListener('click',function(e){var tr=e.target.closest&&e.target.
       if(LLP.c===llBI(LL.kind)){SELB=sel.length===LLP.vals.length?[]:sel.map(function(v){return String(v).toUpperCase()});llPopClose();renderDash();return}
       if(sel.length===LLP.vals.length)delete LL.f[LL.kind][LLP.c];else LL.f[LL.kind][LLP.c]=sel;llPopClose();LL.hdr=null;renderList()}});
   document.querySelector('#livelist .scroll').addEventListener('scroll',llPopClose);
-  $('llclr').onclick=function(){var hp=!!PER;PER=null;LL.q='';LL.f={D:{},P:{},W:{}};LL.s={D:null,P:null,W:null};$('llq').value='';LL.hdr=null;if(hp)renderDash();else renderList()}})();
+  $('llclr').onclick=function(){var hp=!!PER;PER=null;LL.q='';LL.f={D:{},P:{},W:{}};LL.s={D:null,P:null,W:llDefS()};$('llq').value='';LL.hdr=null;if(hp)renderDash();else renderList()}})();
 
 /* ---------- Live window: one running OneDrive workbook, no uploads ---------- */
 var LIVE={loaded:'',busy:false};
@@ -3299,7 +3323,7 @@ function livePreview(){
     o.test=Math.round((base0.test||0)*o.dep/Math.max(1,base0.dep));
     return o};
   document.body.classList.add('wide');if(window.ESI_ALLOW){LD=LD.filter(function(r){return window.ESI_ALLOW.indexOf(r[1])>=0});LP=LP.filter(function(r){return window.ESI_ALLOW.indexOf(r[1])>=0})}
-  var WH=['Bank','Machine S/N','Dispatch Name','Scoping','Ocular Visit','Ocular Report','MSR Completion','Enrollment','For Deployment'],LW=[];for(var w=0;w<12;w++){var bw=names[(w+2)%names.length],dt=function(k){return w>=k*1.5?['','Pending','For Schedule','Waiting for client'][(w+k)%4]:('0'+(k+6)).slice(-2)+'/'+('0'+(w%27+1)).slice(-2)+'/2026'};LW.push([bw,'',cos[w%cos.length]+' - '+['Site Prep','Ocular','MSR Pending'][w%3],dt(1),dt(2),dt(3),dt(4),dt(5),dt(6)])}
+  var WH=['Bank','Progress','Dispatch Name','Scoping','Ocular Visit','Ocular Report','MSR Completion','Enrollment','For Deployment'],LW=[];for(var w=0;w<12;w++){var bw=names[(w+2)%names.length],dt=function(k){return w>=k*1.5?['','Pending','For Schedule','Waiting for client'][(w+k)%4]:('0'+(k+6)).slice(-2)+'/'+('0'+(w%27+1)).slice(-2)+'/2026'};var rw=[bw,'',cos[w%cos.length]+' - '+['Site Prep','Ocular','MSR Pending'][w%3],dt(1),dt(2),dt(3),dt(4),dt(5),dt(6)];rw[1]=rw.slice(3).filter(function(x){return /^\d\d\/\d\d\/\d{4}$/.test(x)}).length+'/6';LW.push(rw)}
   if(window.ESI_ALLOW)LW=LW.filter(function(r){return window.ESI_ALLOW.indexOf(r[0])>=0});
   LL.cache={wb:WB,W:llOpts({head:WH,rows:LW}),D:llOpts({head:H1,rows:LD}),P:llOpts({head:H1.map(function(h,i){return i===0?'Redeployment Type':h}),rows:LP})};renderDash();
   liveSay('ok','Connected to <b>CCDM_DB_LIVE.xlsm</b> · OneDrive · file updated Nov 19, 5:02 PM · refreshes automatically <span style="color:var(--muted)">(preview with sample numbers)</span>');
