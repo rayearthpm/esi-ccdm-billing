@@ -2535,7 +2535,7 @@ function bkColor(n){var h=0;for(var i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))>
 function railHtml(names,gen){
   var cur=gen?$('bank').value:'';
   var h='<h4>Banks</h4><p class="hint">'+(gen?'Pick the bank to bill':'Tick one or more banks')+'</p>';
-  if(gen)h+='<button type="button" class="bk all" role="radio" aria-checked="'+CONSMODE+'" data-bank="__ALL__" title="All banks, one consolidated sheet"><span class="box">✓</span><span class="bklogo">ALL</span><span>All banks</span></button>';
+  if(gen&&(!document.body.classList.contains('viewer')||vHasAll()))h+='<button type="button" class="bk all" role="radio" aria-checked="'+CONSMODE+'" data-bank="__ALL__" title="All banks, one consolidated sheet"><span class="box">✓</span><span class="bklogo">ALL</span><span>All banks</span></button>';
   if(!gen)h+='<button type="button" class="bk all" role="checkbox" aria-checked="'+(SELB.length?'false':'true')+'" data-bank="" title="All banks"><span class="box">✓</span><span class="bklogo">ALL</span><span>All banks</span></button>';
   names.forEach(function(n){
     var on=gen?(!CONSMODE&&n===cur):SELB.indexOf(n)>=0,logo=BANK_LOGOS[n]?'<span class="bklogo" style="background:'+(LOGO_BG[n]||'#fff')+'"><img alt="" src="'+esc(BANK_LOGOS[n])+'"></span>':'<span class="bklogo" style="background:'+bkColor(n)+'">'+esc(n.slice(0,4))+'</span>';
@@ -2655,7 +2655,14 @@ function fillType(){
   t.onchange=checkReqs;checkReqs();
 }
 function consEnter(){
-  var lab=$('type').closest('label');if(lab)lab.classList.toggle('hide',CONSMODE);
+  var lab=$('type').closest('label'),vw=document.body.classList.contains('viewer');if(lab)lab.classList.toggle('hide',CONSMODE);
+  if(vw){
+    $('s2').querySelector('h2').textContent=CONSMODE?'Consolidated Billing':'Bills';
+    $('s2').querySelector('.h').textContent=CONSMODE?'Every bank, machine by machine, in one sheet. Shared by the publisher; you can review and download it here.':'Pick a bank and a bill type. Results are shared by the publisher; you can review and download them here.';
+    if(CONSMODE)vLoadAll();
+    return;
+  }
+
   $('s2').querySelector('h2').textContent=CONSMODE?'Consolidated Billing':'Generate Billing';
   $('s2').querySelector('.h').textContent=CONSMODE?(window.ESI_SERVER?'Every bank, machine by machine, in one sheet. The month is the one chosen on the Database bar.':'Every bank, machine by machine, in one sheet. Pick the billing month, then download.'):(window.ESI_SERVER?'Pick the bank and the bill type. The bill is generated automatically for the month chosen on the Database bar.':'Pick the bank, the bill type and the billing month. The bill is generated automatically.');
   if(CONSMODE){$('reqs').innerHTML='';consGenerate()}
@@ -2773,6 +2780,17 @@ async function publishAll(){
         list.push({id:id,bank:b,type:t,fileName:doc.fileName,count:doc.count});
       }catch(err){skipped.push(b+' '+t+' ('+(err&&err.message||err)+')')}
     }
+    try{ /* the all-banks consolidated billing, so viewers can open and download it too */
+      msg.textContent='Publishing the consolidated billing…';await new Promise(function(r){setTimeout(r,20)});
+      var co=consMake(ctx),cb=await co.toXlsx(),cu=cb instanceof Uint8Array?cb:new Uint8Array(cb),c64=b64enc(cu),cn=Math.ceil(c64.length/CH),cid='ALL_Consolidated';
+      for(var ck=0;ck<cn;ck++)await DBM.doc(base+'files/'+cid+'_'+ck).set({d:c64.slice(ck*CH,(ck+1)*CH)});
+      var cdoc={bank:'ALL',type:'Consolidated',fileName:co.fileName,headers:co.headers.map(String),money:co.money,totals:co.totals.map(plain),count:co.count,chunks:cn,grand:co.grand,
+        checks:co.checks.map(function(c){return{label:c.label,billing:c.billing,attach:c.attach,ok:c.ok}})};
+      var csh=300;cdoc.rows=co.rows.slice(0,csh).map(function(r){return r.map(plain)});
+      while(JSON.stringify(cdoc).length>230000&&csh>10){csh=Math.floor(csh*.7);cdoc.rows=cdoc.rows.slice(0,csh)}
+      cdoc.shown=csh;await DBM.doc(base+'bills/'+cid).set(cdoc);
+      list.push({id:cid,bank:'ALL',type:'Consolidated',fileName:cdoc.fileName,count:cdoc.count});
+    }catch(err){skipped.push('All banks consolidated ('+(err&&err.message||err)+')')}
     var label=new Date(key+'-01T00:00:00Z').toLocaleDateString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}),saved=new Date().toISOString();
     await DBM.doc(base+'results/current').set({key:key,label:label,savedAt:saved,mc:mc,amt:JSON.parse(JSON.stringify(amt)),bills:list,skipped:skipped,stk:JSON.parse(JSON.stringify(stockInv()||{}))});
     var ix=await DBM.doc('results/index').get(),months=(ix.exists&&ix.data().months||[]).filter(function(x){return x.key!==key});
@@ -2815,9 +2833,23 @@ function enterViewer(){
   $('vmonth').onchange=function(){VSEL=this.value;vSubscribe('months/'+VSEL+'/')};
 }
 function vFill(){
-  var bs=[];VIEW.bills.forEach(function(x){if(bs.indexOf(x.bank)<0)bs.push(x.bank)});
+  var bs=[];VIEW.bills.forEach(function(x){if(x.bank!=='ALL'&&bs.indexOf(x.bank)<0)bs.push(x.bank)});
   var b=$('bank'),cur=b.value;b.innerHTML=bs.map(function(x){return'<option>'+esc(x)+'</option>'}).join('');if(bs.indexOf(cur)>=0)b.value=cur;
   b.onchange=function(){vType();renderRail()};vType();renderRail();
+  if(CONSMODE)vLoadAll();
+}
+function vHasAll(){return !!(VIEW&&VIEW.bills&&VIEW.bills.some(function(x){return x.bank==='ALL'}))}
+async function vLoadAll(){
+  var id='ALL_Consolidated';$('msg').textContent='';$('msg').style.color='';
+  if(!vHasAll()){OUT=null;$('s3').classList.add('hide');$('msg').textContent='The consolidated billing has not been published for this month yet.';return}
+  try{
+    var base=VBASE,d=await DBM.doc(base+'bills/'+id).get();if(!CONSMODE)return;
+    if(!d.exists){OUT=null;$('s3').classList.add('hide');$('msg').textContent='The consolidated billing is not available.';return}
+    var x=d.data();
+    OUT={name:'All banks consolidated',fileName:x.fileName,headers:x.headers,rows:x.rows,totals:x.totals,money:x.money,checks:x.checks,count:x.count,shown:x.shown,grand:x.grand,
+      toXlsx:async function(){var s='';for(var k=0;k<x.chunks;k++){var c=await DBM.doc(base+'files/'+id+'_'+k).get();if(!c.exists)throw new Error('file part missing');s+=c.data().d}return b64dec(s)}};
+    PV.bank='ALL';PV.type='Consolidated';$('q').value='';preview('All banks','Consolidated');
+  }catch(e){OUT=null;$('s3').classList.add('hide');$('msg').textContent='Could not load the consolidated billing: '+((e&&(e.code||e.message))||e)}
 }
 function vType(){
   var t=$('type'),cur=t.value,ts=VIEW.bills.filter(function(x){return x.bank===$('bank').value});
@@ -3000,8 +3032,8 @@ function llTrend(){
   function cnt(t,col,o){if(!t)return;t.rows.forEach(function(r){
     if(sel&&sel.indexOf(String(r[1]).toUpperCase())<0)return;
     var m=/^(\d\d)\/\d\d\/(\d{4})$/.exec(r[col]||'');if(!m)return;var k=m[2]+'-'+m[1];o[k]=(o[k]||0)+1;if(k>latest)latest=k})}
-  cnt(d.D,5,cD);cnt(d.P,6,cP);
-  var cA={};if(d.D)d.D.rows.forEach(function(r){var m=/^(\d\d)\/\d\d\/(\d{4})$/.exec(r[5]||'');if(m){var k=m[2]+'-'+m[1];cA[k]=(cA[k]||0)+1}}); /* quota = all banks together, whatever the bank filter */
+  cnt(d.D,5,cD);cnt(d.P,5,cD);cnt(d.P,6,cP); /* Deployed = Deployment Date on the Deployed AND Pullout lists (a pulled-out machine was deployed too); Pulled out = Pull Out Date on the Pullout list */
+  var cA={};[d.D,d.P].forEach(function(t){if(t)t.rows.forEach(function(r){var m=/^(\d\d)\/\d\d\/(\d{4})$/.exec(r[5]||'');if(m){var k=m[2]+'-'+m[1];cA[k]=(cA[k]||0)+1}})}); /* quota = all banks together, whatever the bank filter */
   function keys(endY,endM){var a=[];for(var i=11;i>=0;i--){var y=endY,m=endM-i;while(m<0){m+=12;y--}a.push([y,m,y+'-'+('0'+(m+1)).slice(-2)])}return a}
   var now=new Date(),K=keys(now.getFullYear(),now.getMonth());
   if(!K.some(function(k){return cD[k[2]]||cP[k[2]]})&&latest)K=keys(+latest.slice(0,4),+latest.slice(5)-1);
@@ -3371,18 +3403,15 @@ function consBuild(ctx){
   Object.keys(perBank).forEach(function(b){var p=perBank[b];checks.push({label:b+' ('+p.n+' machines)',billing:p.got,attach:p.src,ok:p.src===null||Math.abs(p.got-p.src)<0.5})});
   return{rows:rows,checks:checks,issues:issues,ban:ban,perBank:perBank};
 }
-function consGenerate(){
-  if(!WB)return;
-  var msg=$('msg');msg.textContent='';msg.style.color='';
-  if(!$('cutoff').value){msg.textContent='Choose the billing month first.';return}
+function consMake(ctx){
   try{
-    var c=consBuild({wb:WB,T:TBL,cutoff:cutoffDate()}),n=c.rows.length,tot=[];
+    var c=consBuild(ctx),n=c.rows.length,tot=[];
     for(var i=0;i<44;i++)tot.push('');
     tot[15]='TOTAL';for(var j=16;j<44;j++){if(CONS_AMT.indexOf(j)<0&&j!==43)continue;var s=0;c.rows.forEach(function(r){s+=consNum(r[j])});tot[j]=Math.round(s*100)/100}
     var fn='CCDM_Servicing_Summary_'+c.ban.mon+'_'+c.ban.yr+'_ACCRUAL.xlsx';
     var prev=c.rows.map(function(r){return r.slice(0,44).map(function(v){return v instanceof Date?v:v})});
     var money=CONS_AMT.concat([43]);
-    OUT={name:'All banks consolidated',fileName:fn,headers:CONS_HEAD,rows:prev,totals:tot,money:money,checks:c.checks,count:n,shown:300,grand:tot[43],
+    return{name:'All banks consolidated',fileName:fn,headers:CONS_HEAD,rows:prev,totals:tot,money:money,checks:c.checks,count:n,shown:300,grand:tot[43],
       toXlsx:async function(){
         var wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('CCDM_Consolidated_Billing');
         var L=function(i){var s='';i++;while(i>0){var m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26)}return s};
@@ -3423,12 +3452,19 @@ function consGenerate(){
         for(var q=1;q<=6;q++)ws.getColumn(q).hidden=true;
         return await wb.xlsx.writeBuffer();
       }};
+  }finally{}
+}
+function consGenerate(){
+  if(!WB)return;
+  var msg=$('msg');msg.textContent='';msg.style.color='';
+  if(!$('cutoff').value){msg.textContent='Choose the billing month first.';return}
+  try{
+    var o=consMake({wb:WB,T:TBL,cutoff:cutoffDate()});OUT=o;
     PV.bank='ALL';PV.type='Consolidated';$('q').value='';
     preview('All banks','Consolidated');
-    var bad=c.checks.filter(function(x){return !x.ok}).length;
+    var bad=o.checks.filter(function(x){return !x.ok}).length;
     msg.textContent=bad?bad+' bank(s) differ from their own bill total – see the red checks below.':'Consolidated total matches every bank bill.';
     msg.style.color=bad?'':'#0a7d33';
-    if(c.issues.errors)msg.textContent+=' '+c.issues.errors+' #N/A cell(s) were counted as 0.';
   }catch(e){msg.textContent='Could not build the consolidated billing: '+e.message}
 }
 
