@@ -152,6 +152,17 @@ body.wide{font-size:14px}
 @media (max-width:620px){.kpi.svc .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi.svc .tile:nth-child(n){grid-column:auto}}
 .kpi.svc td,.kpi.svc th{padding:5px 8px}
 .note-s{color:var(--muted);font-size:11.5px}
+.pubwrap{display:inline-flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.pbar{display:inline-block;width:170px;max-width:40vw;height:9px;border-radius:99px;background:var(--line);overflow:hidden;flex:none}
+.pbar i{display:block;height:100%;width:0;border-radius:99px;transition:width .35s ease,background-color .25s;background:var(--accent,#3b82f6) repeating-linear-gradient(135deg,rgba(255,255,255,.28) 0 8px,transparent 8px 16px);background-size:22.6px 22.6px;animation:pbmove .7s linear infinite}
+.pbar.ok i{background:#16a34a;animation:none}
+.pbar.warn i{background:#d97706;animation:none}
+.pbar.err i{background:#dc2626;animation:none}
+@keyframes pbmove{to{background-position:22.6px 0}}
+.pubwrap.ok #pubMsg{color:#fff;background:#16a34a;font-weight:700;padding:4px 11px;border-radius:99px;font-size:12px}
+.pubwrap.warn #pubMsg{color:#fff;background:#d97706;font-weight:700;padding:4px 11px;border-radius:99px;font-size:12px}
+.pubwrap.err #pubMsg{color:#fff;background:#dc2626;font-weight:700;padding:4px 11px;border-radius:99px;font-size:12px}
+@media (prefers-reduced-motion:reduce){.pbar i{animation:none}}
 .kpi:not(.svc){display:flex;flex-direction:column;justify-content:flex-start}
 .kpi:not(.svc) h3{align-self:flex-start}
 .kpi:not(.svc) .pie{flex-direction:column;align-items:stretch;gap:12px;margin:auto 0}
@@ -201,7 +212,7 @@ body.viewer .ubar,body.viewer label[for=cutoff]{display:none!important}
   <span class="ulab">Database</span>
   <div id="drop" tabindex="0" role="button"><span id="dtext">Drop the Excel database here or click to choose</span><input id="file" type="file" accept=".xlsx,.xlsm,.xls" class="hide"></div>
   <div id="sheets"></div>
-  <button class="p hide" id="pubBtn" disabled>Publish to viewers</button><span id="pubMsg" class="note-s"></span>
+  <button class="p hide" id="pubBtn" disabled>Publish to viewers</button><span id="pubWrap" class="pubwrap hide"><span id="pubBar" class="pbar" aria-hidden="true"><i></i></span><span id="pubMsg" class="note-s" role="status" aria-live="polite"></span></span>
 </div>
 <div class="vbar hide" id="vbar"><span class="ulab">Month</span><select id="vmonth"></select></div>
 <nav class="tabs" role="tablist" aria-label="Sections">
@@ -2633,11 +2644,16 @@ function plain(v){
   if(v===null||v===undefined)return null;
   return typeof v==='boolean'?v:String(v);
 }
+function pubSet(frac,text,state){ /* progress bar + status: state run | ok | warn | err */
+  var w=$('pubWrap'),bar=$('pubBar');w.classList.remove('hide','ok','warn','err');bar.classList.remove('ok','warn','err');
+  if(state&&state!=='run'){w.classList.add(state);bar.classList.add(state)}
+  bar.firstChild.style.width=Math.max(3,Math.min(100,Math.round(frac*100)))+'%';$('pubMsg').textContent=text;
+}
 async function publishAll(){
   var btn=$('pubBtn'),msg=$('pubMsg');
   if(!DBM||!WB||!$('cutoff').value)return;
-  btn.disabled=true;
-  var key=$('cutoff').value,base='months/'+key+'/',cut=cutoffDate(),ctx={wb:WB,T:TBL,cutoff:cut},list=[],skipped=[],mc={},amt;
+  btn.disabled=true;pubSet(0.02,'Starting…','run');
+  var key=$('cutoff').value,base='months/'+key+'/',cut=cutoffDate(),ctx={wb:WB,T:TBL,cutoff:cut},list=[],skipped=[],mc={},amt,pf=0.02;
   try{
     var all=machineCounts('');mc['']=all;Object.keys(all.banks).forEach(function(b){mc[b]=machineCounts(b)});
     mc=JSON.parse(JSON.stringify(mc));
@@ -2646,7 +2662,7 @@ async function publishAll(){
     var jobs=[];Object.keys(BILLS).forEach(function(b){Object.keys(BILLS[b]).forEach(function(t){jobs.push([b,t])})});
     for(var j=0;j<jobs.length;j++){
       var b=jobs[j][0],t=jobs[j][1],def=BILLS[b][t],id=b+'_'+t;
-      msg.textContent='Publishing '+(j+1)+' of '+jobs.length+': '+b+' '+t+'…';
+      pf=j/(jobs.length+2);pubSet(pf,'Publishing '+(j+1)+' of '+jobs.length+': '+b+' '+t+'…','run');
       await new Promise(function(r){setTimeout(r,20)});
       try{
         if(!def.run)throw new Error('not available');
@@ -2663,7 +2679,7 @@ async function publishAll(){
       }catch(err){skipped.push(b+' '+t+' ('+(err&&err.message||err)+')')}
     }
     try{ /* the all-banks consolidated billing, so viewers can open and download it too */
-      msg.textContent='Publishing the consolidated billing…';await new Promise(function(r){setTimeout(r,20)});
+      pf=jobs.length/(jobs.length+2);pubSet(pf,'Publishing the consolidated billing…','run');await new Promise(function(r){setTimeout(r,20)});
       var co=consMake(ctx),cb=await co.toXlsx(),cu=cb instanceof Uint8Array?cb:new Uint8Array(cb),c64=b64enc(cu),cn=Math.ceil(c64.length/CH),cid='ALL_Consolidated';
       for(var ck=0;ck<cn;ck++)await DBM.doc(base+'files/'+cid+'_'+ck).set({d:c64.slice(ck*CH,(ck+1)*CH)});
       var cdoc={bank:'ALL',type:'Consolidated',fileName:co.fileName,headers:co.headers.map(String),money:co.money,totals:co.totals.map(plain),count:co.count,chunks:cn,grand:co.grand,
@@ -2675,11 +2691,12 @@ async function publishAll(){
     }catch(err){skipped.push('All banks consolidated ('+(err&&err.message||err)+')')}
     var label=new Date(key+'-01T00:00:00Z').toLocaleDateString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}),saved=new Date().toISOString();
     await DBM.doc(base+'results/current').set({key:key,label:label,savedAt:saved,mc:mc,amt:JSON.parse(JSON.stringify(amt)),bills:list,skipped:skipped,stk:JSON.parse(JSON.stringify(stockInv()||{}))});
+    pf=(jobs.length+1)/(jobs.length+2);pubSet(pf,'Saving the results…','run');
     var ix=await DBM.doc('results/index').get(),months=(ix.exists&&ix.data().months||[]).filter(function(x){return x.key!==key});
     months.push({key:key,label:label,savedAt:saved});months.sort(function(a,b){return a.key<b.key?1:-1});
     await DBM.doc('results/index').set({months:months});
-    msg.textContent='Published '+list.length+' bills'+(skipped.length?' · skipped: '+skipped.join('; '):'')+'.';
-  }catch(err){msg.textContent='Could not publish: '+((err&&(err.code||err.message))||err)}
+    pubSet(1,(skipped.length?'Published '+list.length+' bills · skipped: '+skipped.join('; '):'✔ Published · '+list.length+' bills · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})),skipped.length?'warn':'ok');
+  }catch(err){pubSet(pf,'Could not publish: '+((err&&(err.code||err.message))||err),'err')}
   btn.disabled=false;
 }
 
