@@ -36,6 +36,7 @@ form.ok{border-color:var(--ok)}form.ok .logo{box-shadow:0 0 0 3px var(--ok)}
 <div class="caps" id="caps" role="status">⇪ Caps Lock is on</div>
 <label class="rm"><input type="checkbox" id="rm"> Remember my username on this device</label>
 <div id="e" role="alert"></div><button class="go"><span class="sp"></span><span id="gt">Sign in</span></button></form>
+<p style="text-align:center;font-size:11px;color:#8a93a8;margin:10px 0 0;position:relative;z-index:1" id="ver">Page version 2026-11-21 · 15:58</p>
 <script>
 function pwToggle(root){(root||document).querySelectorAll('.pw .tg').forEach(function(b){if(b._on)return;b._on=1;b.onclick=function(){var i=b.parentNode.querySelector('input'),h=i.type==='password';i.type=h?'text':'password';b.textContent=h?'Hide':'Show';b.setAttribute('aria-pressed',h);i.focus()}})};pwToggle();
 var F=document.getElementById('f'),E=document.getElementById('e'),G=F.querySelector('.go'),T=document.getElementById('gt'),RM=document.getElementById('rm');
